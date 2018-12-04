@@ -62,6 +62,9 @@ const UserList = ({ users }) => (
         <span>
           <strong>Username:</strong> {user.username}
         </span>
+        <span>
+          <strong>Alias:</strong> {user.alias}
+        </span>
       </li>
     ))}
   </ul>
