@@ -6,6 +6,7 @@ import { SignUpLink } from '../SignUp';
 import { PasswordForgetLink } from '../PasswordForget';
 import { withFirebase } from '../Firebase';
 import * as ROUTES from '../../constants/routes';
+import Button from '@material-ui/core/Button';
 
 const SignInPage = () => (
   <div>
@@ -70,10 +71,9 @@ class SignInFormBase extends Component {
           type="password"
           placeholder="Password"
         />
-        <button disabled={isInvalid} type="submit">
-          Sign In
-        </button>
-
+        <Button variant="contained" color="primary" type="submit" disabled={isInvalid}>
+        Sign In
+        </Button>
         {error && <p>{error.message}</p>}
       </form>
     );

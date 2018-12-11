@@ -8,6 +8,7 @@ import { withAuthorization } from '../Session';
 import { withRouter } from 'react-router-dom';
 import { compose } from 'recompose';
 import { withFirebase } from '../Firebase';
+import Button from '@material-ui/core/Button';
 
 const AccountPage = () => (
   <AuthUserContext.Consumer>
@@ -16,7 +17,7 @@ const AccountPage = () => (
         <h1>Account:</h1>
         <PasswordForgetForm />
         <PasswordChangeForm />
-        <EmailChangeForm />
+        <EmailChangeForm user={authUser}/>
         <InformationsChangeForm />
       </div>
     )}
@@ -24,7 +25,7 @@ const AccountPage = () => (
 );
 
 const INITIAL_STATE = {
-  alias: '',
+  name: '',
   email: '',
   error: null,
 };
@@ -32,17 +33,26 @@ const INITIAL_STATE = {
 class InformationsChangeFormBase extends Component {
   constructor(props) {
     super(props);
-
     this.state = { ...INITIAL_STATE };
+
+    let auth = this.props.firebase.auth;
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        this.setState({ email: user.email, name: user.displayName });
+      } else {
+        // No user is signed in.
+      }
+    });
   }
 
   onSubmit = event => {
-    const { alias} = this.state;
+    const { name } = this.state;
 
     this.props.firebase
-    .doUpdateInformations(alias)
+    .doUpdateInformations(name)
     .then(() => {
-      this.setState({ ...INITIAL_STATE });
+      console.log({ ...INITIAL_STATE });
+      this.setState({ name: this.props.firebase.auth.currentUser.displayName });
     })
     .catch(error => {
       this.setState({ error });
@@ -56,22 +66,22 @@ class InformationsChangeFormBase extends Component {
   };
 
   render() {
-    const { alias, name, error } = this.state;
+    const { name, error } = this.state;
 
-    const isInvalid = alias === '' || name  === '';
+    const isInvalid = name  === '';
 
     return (
       <form onSubmit={this.onSubmit}>
         <input
-          name="alias"
-          value={alias}
+          name="name"
+          value={name}
           onChange={this.onChange}
           type="text"
-          placeholder="Alias used in URL"
+          placeholder="Alias"
         />
-        <button disabled={isInvalid} type="submit">
+        <Button variant="contained" color="primary" disabled={isInvalid} type="submit">
           Update
-        </button>
+        </Button>
 
         {error && <p>{error.message}</p>}
       </form>
@@ -82,9 +92,16 @@ class InformationsChangeFormBase extends Component {
 class EmailChangeFormBase extends Component {
   constructor(props) {
     super(props);
-
     this.state = { ...INITIAL_STATE };
-  }
+    let auth = this.props.firebase.auth;
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        this.setState({ email: user.email });
+      } else {
+        // No user is signed in.
+      }
+    });
+ }
 
   onSubmit = event => {
     const { email } = this.state;
@@ -92,7 +109,7 @@ class EmailChangeFormBase extends Component {
     this.props.firebase
     .doUpdateEmail(email)
     .then(() => {
-      this.setState({ ...INITIAL_STATE });
+      this.setState({ email: this.props.firebase.auth.currentUser.email });
     })
     .catch(error => {
       this.setState({ error });
@@ -119,9 +136,9 @@ class EmailChangeFormBase extends Component {
           type="email"
           placeholder="Your account email"
         />
-        <button disabled={isInvalid} type="submit">
+        <Button variant="contained" color="primary" disabled={isInvalid} type="submit">
           Update
-        </button>
+        </Button>
 
         {error && <p>{error.message}</p>}
       </form>

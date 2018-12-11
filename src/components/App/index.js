@@ -12,12 +12,14 @@ import AdminPage from '../Admin';
 
 import * as ROUTES from '../../constants/routes';
 import { withAuthentication } from '../Session';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import 'typeface-roboto';
 
 const App = () => (
   <Router>
     <div>
       <Navigation />
-
+      <CssBaseline/>
       <hr />
 
       <Route exact path={ROUTES.LANDING} component={LandingPage} />

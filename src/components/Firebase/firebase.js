@@ -35,15 +35,14 @@ class Firebase {
 
     doUpdateEmail = (email) => this.auth.currentUser.updateEmail(email);
 
-    doUpdateInformations = (alias) =>
-    this.auth.currentUser.updateProfile({
-      displayName: alias
-    })
+ 
 
-
-    // *** User API ***
+  // *** User API ***
     user = uid => this.db.ref(`users/${uid}`);
     users = () => this.db.ref('users');
+
+    doUpdateInformations = (name) => this.auth.currentUser.updateProfile({ displayName: name });
+
 }
 
 export default Firebase;

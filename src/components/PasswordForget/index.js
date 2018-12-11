@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { withFirebase } from '../Firebase';
 import * as ROUTES from '../../constants/routes';
+import Button from '@material-ui/core/Button';
 
 const PasswordForgetPage = () => (
   <div>
@@ -19,8 +20,15 @@ const INITIAL_STATE = {
 class PasswordForgetFormBase extends Component {
   constructor(props) {
     super(props);
-
     this.state = { ...INITIAL_STATE };
+    let auth = this.props.firebase.auth;
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        this.setState({ email: user.email });
+      } else {
+        // No user is signed in.
+      }
+    });
   }
 
   onSubmit = event => {
@@ -56,9 +64,9 @@ class PasswordForgetFormBase extends Component {
           type="text"
           placeholder="Email Address"
         />
-        <button disabled={isInvalid} type="submit">
+        <Button variant="contained" color="primary" disabled={isInvalid} type="submit">
           Reset My Password
-        </button>
+        </Button>
 
         {error && <p>{error.message}</p>}
       </form>
