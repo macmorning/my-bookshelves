@@ -9,6 +9,7 @@ import { withRouter } from 'react-router-dom';
 import { compose } from 'recompose';
 import { withFirebase } from '../Firebase';
 import Button from '@material-ui/core/Button';
+import TextField from '@material-ui/core/TextField';
 
 const AccountPage = () => (
   <AuthUserContext.Consumer>
@@ -72,12 +73,12 @@ class InformationsChangeFormBase extends Component {
 
     return (
       <form onSubmit={this.onSubmit}>
-        <input
+        <TextField
           name="name"
           value={name}
           onChange={this.onChange}
           type="text"
-          placeholder="Alias"
+          label="Alias"
         />
         <Button variant="contained" color="primary" disabled={isInvalid} type="submit">
           Update
@@ -123,19 +124,26 @@ class EmailChangeFormBase extends Component {
   };
 
   render() {
-    const { email, error } = this.state;
+    const { email, emailTwo, error } = this.state;
 
-    const isInvalid = !(/^.+@.+\..+$/.test(email));
+    const isInvalid = !(/^.+@.+\..+$/.test(email)) || email !== emailTwo;
 
     return (
       <form onSubmit={this.onSubmit}>
-        <input
+        <TextField
           name="email"
           value={email}
           onChange={this.onChange}
           type="email"
-          placeholder="Your account email"
+          label="Your Account Email"
         />
+        <TextField
+          name="emailTwo"
+          value={emailTwo}
+          onChange={this.onChange}
+          type="email"
+          label="Confirm New Email"
+        />        
         <Button variant="contained" color="primary" disabled={isInvalid} type="submit">
           Update
         </Button>

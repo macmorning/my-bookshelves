@@ -7,6 +7,7 @@ import { PasswordForgetLink } from '../PasswordForget';
 import { withFirebase } from '../Firebase';
 import * as ROUTES from '../../constants/routes';
 import Button from '@material-ui/core/Button';
+import TextField from '@material-ui/core/TextField';
 
 const SignInPage = () => (
   <div>
@@ -57,19 +58,20 @@ class SignInFormBase extends Component {
 
     return (
       <form onSubmit={this.onSubmit}>
-        <input
+        <TextField
           name="email"
+          label="Email Address"
           value={email}
           onChange={this.onChange}
-          type="text"
-          placeholder="Email Address"
+          margin="normal"
         />
-        <input
+        <TextField
           name="password"
+          label="Password"
           value={password}
           onChange={this.onChange}
           type="password"
-          placeholder="Password"
+          margin="normal"
         />
         <Button variant="contained" color="primary" type="submit" disabled={isInvalid}>
         Sign In
