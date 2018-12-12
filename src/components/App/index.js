@@ -18,10 +18,8 @@ import 'typeface-roboto';
 const App = () => (
   <Router>
     <div>
-      <Navigation />
       <CssBaseline/>
-      <hr />
-
+      <Navigation />
       <Route exact path={ROUTES.LANDING} component={LandingPage} />
       <Route path={ROUTES.SIGN_UP} component={SignUpPage} />
       <Route path={ROUTES.SIGN_IN} component={SignInPage} />
