@@ -1,11 +1,9 @@
 import React, { Component } from 'react';
-import { withRouter } from 'react-router-dom';
-import { compose } from 'recompose';
-
-import { SignUpLink } from '../SignUp';
-import { PasswordForgetLink } from '../PasswordForget';
 import { withFirebase } from '../Firebase';
+import { withRouter } from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
+import { Link } from 'react-router-dom';
+import { compose } from 'recompose';
 
 import PropTypes from 'prop-types';
 import Avatar from '@material-ui/core/Avatar';
@@ -20,13 +18,12 @@ import LockIcon from '@material-ui/icons/LockOutlined';
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 import withStyles from '@material-ui/core/styles/withStyles';
+import Divider from '@material-ui/core/Divider';
 
 function SignInPage(props) {
   return (
   <div>
     <SignInForm  {...props}></SignInForm>
-    <PasswordForgetLink />
-    <SignUpLink />
   </div>
   );
 }
@@ -66,7 +63,6 @@ const INITIAL_STATE = {
 class SignInFormBase extends Component {
   constructor(props) {
     super(props);
-    console.log(this.props);
     this.state = { ...INITIAL_STATE };
   }
 
@@ -93,7 +89,6 @@ class SignInFormBase extends Component {
   render() {
     const { email, password, error } = this.state;
     const { classes } = this.props;
-    console.log(this.props);
     const isInvalid = password === '' || email === '';
 
     return (
@@ -131,6 +126,10 @@ class SignInFormBase extends Component {
           </Button>
         </form>
         {error && <p>{error.message}</p>}
+
+        <Divider variant="middle" />
+        <Typography className={classes.link} component={Link} to={ROUTES.PASSWORD_FORGET}>Forgot password?</Typography>
+        <Typography className={classes.link} component={Link} to={ROUTES.SIGN_UP}>Sign up!</Typography>
       </Paper>
 </main>
     );

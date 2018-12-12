@@ -3,19 +3,58 @@ import { Link } from 'react-router-dom';
 
 import { withFirebase } from '../Firebase';
 import * as ROUTES from '../../constants/routes';
+import PropTypes from 'prop-types';
+import Avatar from '@material-ui/core/Avatar';
 import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import FormControl from '@material-ui/core/FormControl';
+import Input from '@material-ui/core/Input';
+import InputLabel from '@material-ui/core/InputLabel';
+import LockIcon from '@material-ui/icons/LockOutlined';
+import Paper from '@material-ui/core/Paper';
+import Typography from '@material-ui/core/Typography';
+import withStyles from '@material-ui/core/styles/withStyles';
+import Snackbar from '@material-ui/core/Snackbar';
+import SnackbarContent from '@material-ui/core/SnackbarContent';
+import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+import IconButton from '@material-ui/core/IconButton';
+import CloseIcon from '@material-ui/icons/Close';
 
-const PasswordForgetPage = () => (
+const PasswordForgetPage = (props) => (
   <div>
-    <h1>PasswordForget</h1>
-    <PasswordForgetForm />
+    <PasswordForgetForm {...props}/>
   </div>
 );
+const styles = theme => ({
+  root: {
+    ...theme.mixins.gutters(),
+    paddingTop: theme.spacing.unit * 2,
+    paddingBottom: theme.spacing.unit * 2,
+  },
+  main: {
+    width: 'auto',
+    display: 'block', // Fix IE 11 issue.
+    marginLeft: theme.spacing.unit * 3,
+    marginRight: theme.spacing.unit * 3,
+    [theme.breakpoints.up(400 + theme.spacing.unit * 3 * 2)]: {
+      width: 400,
+      marginLeft: 'auto',
+      marginRight: 'auto',
+    },
+  },
+  paper: {
+    marginTop: theme.spacing.unit * 8,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: `${theme.spacing.unit * 2}px ${theme.spacing.unit * 3}px ${theme.spacing.unit * 3}px`,
+  }
+});
 
 const INITIAL_STATE = {
   email: '',
   error: null,
+  open: false
 };
 
 class PasswordForgetFormBase extends Component {
@@ -39,6 +78,7 @@ class PasswordForgetFormBase extends Component {
       .doPasswordReset(email)
       .then(() => {
         this.setState({ ...INITIAL_STATE });
+        this.setState({ open: true });
       })
       .catch(error => {
         this.setState({ error });
@@ -47,30 +87,76 @@ class PasswordForgetFormBase extends Component {
     event.preventDefault();
   };
 
+  handleClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+
+    this.setState({ open: false });
+  };
+
   onChange = event => {
     this.setState({ [event.target.name]: event.target.value });
   };
 
   render() {
     const { email, error } = this.state;
-
+    const { classes } = this.props;
     const isInvalid = email === '';
 
     return (
-      <form onSubmit={this.onSubmit}>
-        <TextField
-          name="email"
-          value={this.state.email}
-          onChange={this.onChange}
-          type="text"
-          label="Email Address"
-        />
-        <Button variant="contained" color="primary" disabled={isInvalid} type="submit">
-          Reset My Password
-        </Button>
-
+      <main className={classes.main}>
+      <CssBaseline />
+      <Paper className={classes.paper}>
+        <Avatar className={classes.avatar}>
+          <LockIcon />
+        </Avatar>
+        <Typography component="h1" variant="h5">
+          Reset Password
+        </Typography>
+        <form className={classes.form} onSubmit={this.onSubmit}>
+          <FormControl margin="normal" required fullWidth>
+            <InputLabel htmlFor="email">Email Address</InputLabel>
+            <Input id="email" name="email" autoComplete="email" autoFocus value={this.state.email} onChange={this.onChange}/>
+          </FormControl>
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            color="primary"
+            className={classes.submit}
+            disabled={isInvalid}
+          >
+            Send link
+          </Button>
+        </form>
         {error && <p>{error.message}</p>}
-      </form>
+      </Paper>
+      <Snackbar
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          open={this.state.open}
+          autoHideDuration={6000}
+          onClose={this.handleClose}
+          ContentProps={{
+            'aria-describedby': 'message-id',
+          }}
+          message={<span id="message-id">Email sent</span>}
+          action={[
+            <IconButton
+              key="close"
+              aria-label="Close"
+              color="inherit"
+              className={classes.close}
+              onClick={this.handleClose}
+            >
+              <CloseIcon />
+            </IconButton>,
+          ]}
+      />
+      </main>
     );
   }
 }
@@ -81,7 +167,11 @@ const PasswordForgetLink = () => (
   </p>
 );
 
-export default PasswordForgetPage;
+PasswordForgetFormBase.propTypes = {
+  classes: PropTypes.object.isRequired,
+};
+
+export default withStyles(styles)(PasswordForgetPage);
 
 const PasswordForgetForm = withFirebase(PasswordForgetFormBase);
 
