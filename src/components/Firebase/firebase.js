@@ -43,6 +43,10 @@ class Firebase {
 
     doUpdateInformations = (name) => this.auth.currentUser.updateProfile({ displayName: name });
 
+
+  // *** Book API ***
+
+    books = uid => this.db.ref(`bd/${uid}`).limitToLast(40);
 }
 
 export default Firebase;

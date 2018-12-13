@@ -16,6 +16,7 @@ import Typography from '@material-ui/core/Typography';
 import withStyles from '@material-ui/core/styles/withStyles';
 import Snackbar from '@material-ui/core/Snackbar';
 import SnackbarContent from '@material-ui/core/SnackbarContent';
+import green from '@material-ui/core/colors/green';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import IconButton from '@material-ui/core/IconButton';
 import CloseIcon from '@material-ui/icons/Close';
@@ -48,7 +49,14 @@ const styles = theme => ({
     flexDirection: 'column',
     alignItems: 'center',
     padding: `${theme.spacing.unit * 2}px ${theme.spacing.unit * 3}px ${theme.spacing.unit * 3}px`,
-  }
+  },
+  message: {
+    display: 'flex',
+    alignItems: 'center'
+  },
+  success: {
+    backgroundColor: green[600],
+  },
 });
 
 const INITIAL_STATE = {
@@ -142,20 +150,24 @@ class PasswordForgetFormBase extends Component {
           onClose={this.handleClose}
           ContentProps={{
             'aria-describedby': 'message-id',
-          }}
-          message={<span id="message-id">Email sent</span>}
-          action={[
-            <IconButton
-              key="close"
-              aria-label="Close"
-              color="inherit"
-              className={classes.close}
-              onClick={this.handleClose}
-            >
-              <CloseIcon />
-            </IconButton>,
-          ]}
-      />
+          }} >
+          <SnackbarContent
+              className={classes.success}
+              aria-describedby="client-snackbar"
+              message={<span id="message-id"><CheckCircleIcon/>Email sent</span>}
+              action={[
+                <IconButton
+                  key="close"
+                  aria-label="Close"
+                  color="inherit"
+                  className={classes.close}
+                  onClick={this.handleClose}
+                >
+                  <CloseIcon />
+                </IconButton>,
+              ]}
+              />
+      </Snackbar>
       </main>
     );
   }

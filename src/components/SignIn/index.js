@@ -129,7 +129,7 @@ class SignInFormBase extends Component {
 
         <Divider variant="middle" />
         <Typography className={classes.link} component={Link} to={ROUTES.PASSWORD_FORGET}>Forgot password?</Typography>
-        <Typography className={classes.link} component={Link} to={ROUTES.SIGN_UP}>Sign up!</Typography>
+        <Typography className={classes.link} component={Link} to={ROUTES.SIGN_UP}>Sign up</Typography>
       </Paper>
 </main>
     );

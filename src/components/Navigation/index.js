@@ -77,7 +77,7 @@ class NavigationAuth extends React.Component {
     
     return (
       <div className={classes.root}>
-        <AppBar position="static">
+        <AppBar>
           <Toolbar>
             <IconButton className={classes.menuButton} onClick={this.toggleDrawer('left', true)} color="inherit" aria-label="Menu">
               <MenuIcon/>
@@ -107,7 +107,7 @@ function NavigationNonAuth(props) {
   const { classes } = props;
   return (
     <div className={classes.root}>
-      <AppBar position="static">
+      <AppBar position="fixed">
         <Toolbar>
             <Typography variant="h6" color="inherit" className={classes.grow}>
               BD Tek
