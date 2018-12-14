@@ -9,27 +9,31 @@ import PasswordForgetPage from '../PasswordForget';
 import HomePage from '../Home';
 import AccountPage from '../Account';
 // import AdminPage from '../Admin';
-
+import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
+import theme from '../../constants/theme';
 import * as ROUTES from '../../constants/routes';
 import { withAuthentication } from '../Session';
-import CssBaseline from '@material-ui/core/CssBaseline';
+// import CssBaseline from '@material-ui/core/CssBaseline';
 import 'typeface-roboto';
 
+
+
 const App = () => (
-  <Router>
-    <div>
-      <CssBaseline/>
-      <Navigation />
-      <div style={{ display: "block", height:"63px"}}>&nbsp;</div>
-      <Route exact path={ROUTES.LANDING} component={LandingPage} />
-      <Route path={ROUTES.SIGN_UP} component={SignUpPage} />
-      <Route path={ROUTES.SIGN_IN} component={SignInPage} />
-      <Route path={ROUTES.PASSWORD_FORGET} component={PasswordForgetPage} />
-      <Route path={ROUTES.HOME} component={HomePage} />
-      <Route path={ROUTES.ACCOUNT} component={AccountPage} />
-    </div>
+    <Router>
+    <MuiThemeProvider theme={theme}>
+      <div>
+        <Navigation />
+        <div style={{ display: "block", height:"63px"}}>&nbsp;</div>
+        <Route exact path={ROUTES.LANDING} component={LandingPage} />
+        <Route path={ROUTES.SIGN_UP} component={SignUpPage} />
+        <Route path={ROUTES.SIGN_IN} component={SignInPage} />
+        <Route path={ROUTES.PASSWORD_FORGET} component={PasswordForgetPage} />
+        <Route path={ROUTES.HOME} component={HomePage} />
+        <Route path={ROUTES.ACCOUNT} component={AccountPage} />
+      </div>
+  </MuiThemeProvider>
   </Router>
-);
+  );
 // <Route path={ROUTES.ADMIN} component={AdminPage} />
 
 export default withAuthentication(App);

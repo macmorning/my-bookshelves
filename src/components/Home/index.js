@@ -28,7 +28,8 @@ const styles = theme => ({
     margin: theme.spacing.unit * 2,
   },
   bookInfos: {
-    fontSize: 16
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.54)'
   }
 });
 
@@ -49,7 +50,7 @@ class HomePage extends Component {
     });
   }
   loadBooks() {
-    function compare(a,b) {
+    let compare = (a,b) => {
       if (a.computedOrderField < b.computedOrderField)
         return -1;
       if (a.computedOrderField > b.computedOrderField)
