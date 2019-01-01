@@ -6,12 +6,20 @@ import { withStyles } from '@material-ui/core/styles';
 import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
 import GridListTileBar from '@material-ui/core/GridListTileBar';
-import ListSubheader from '@material-ui/core/ListSubheader';
 import IconButton from '@material-ui/core/IconButton';
 import InfoIcon from '@material-ui/icons/Info';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import Fade from '@material-ui/core/Fade';
-import Tooltip from '@material-ui/core/Tooltip';
+import Drawer from '@material-ui/core/Drawer';
+import Paper from '@material-ui/core/Paper';
+import Typography from '@material-ui/core/Typography';
+import { Column, Row } from 'simple-flexbox';
+import FormControl from '@material-ui/core/FormControl';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Checkbox from '@material-ui/core/Checkbox';
+import Input from '@material-ui/core/Input';
+import InputLabel from '@material-ui/core/InputLabel';
+import Button from '@material-ui/core/Button';
 
 const styles = theme => ({
   root: {
@@ -20,6 +28,9 @@ const styles = theme => ({
     justifyContent: 'space-around',
     overflow: 'hidden',
     backgroundColor: theme.palette.background.paper,
+    ...theme.mixins.gutters(),
+    paddingTop: theme.spacing.unit * 2,
+    paddingBottom: theme.spacing.unit * 2,
   },
   icon: {
     color: 'rgba(255, 255, 255, 0.54)',
@@ -27,9 +38,21 @@ const styles = theme => ({
   progress: {
     margin: theme.spacing.unit * 2,
   },
-  bookInfos: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.54)'
+  main: {
+    marginLeft: theme.spacing.unit * 3,
+    marginRight: theme.spacing.unit * 3,
+    [theme.breakpoints.up(900 + theme.spacing.unit * 3 * 2)]: {
+      width: 900,
+      marginLeft: 'auto',
+      marginRight: 'auto',
+    },
+  },
+  paper: {
+    paddingTop: '15px',
+    height: '550px',
+  },
+  form: {
+    margin: '10px'
   }
 });
 
@@ -39,7 +62,10 @@ class HomePage extends Component {
     this.state = {
       loading: false,
       books: [],
-      user: ""
+      user: "",
+      tooltipOpen: false,
+      drawerOpen: false,
+      currentBook: {}
     };
     let auth = this.props.firebase.auth;
     auth.onAuthStateChanged((user) => {
@@ -49,6 +75,14 @@ class HomePage extends Component {
       }
     });
   }
+  toggleDrawer = (open, book) => () => {
+    console.log(book);
+    this.setState({
+      drawerOpen: open,
+      currentBook: (book ? book : {})
+    });
+  };
+
   loadBooks() {
     let compare = (a,b) => {
       if (a.computedOrderField < b.computedOrderField)
@@ -57,6 +91,7 @@ class HomePage extends Component {
         return 1;
       return 0;
     }
+
     this.setState({ loading: true });
     this.props.firebase.books(this.state.user).orderByChild("computedOrderField").on('value', snapshot => {
       const booksObject = snapshot.val();
@@ -77,57 +112,102 @@ class HomePage extends Component {
     this.props.firebase.books().off();
   }
 
-  getTooltip(book) {
-    return (
-      <div className="bookInfos">
-        title: {book.title}<br/>
-        author: {book.author}<br/>
-        series: {book.series}<br/>
-        volume: {book.volume}<br/>
-        published: {book.published}<br/>
-        publisher: {book.publisher}<br/>
-        <a href={book.detailsURL} target="_new">more informations</a>
-      </div>
-    );
-  }
-
   render() {
-    const { books, loading } = this.state; 
+    const { books, loading, currentBook } = this.state; 
     const { classes } = this.props;
+    const sideList = (
+      <main className={classes.main}>
+      <Paper className={classes.root} elevation={2}>
+      <Column flexGrow={1}>
+        <Row horizontal='center'>
+          <Typography variant="h5" component="h2">
+            {currentBook.title}
+          </Typography>
+        </Row>
+        <Row horizontal='start' vertical='start'>
+          <Column flexGrow={1} horizontal='center'>
+            <img src={currentBook.imageURL} style={{ height:"400px" }} alt=""/>
+          </Column>
+          <Column flexGrow={1} alignItems='start'>
+            <Row>
+              <form className={classes.form} onSubmit={this.onSubmit}>
+                <FormControl margin="normal" fullWidth>
+                  <InputLabel htmlFor="author">Author</InputLabel>
+                  <Input id="author" value={currentBook.author} name="author" autoComplete="author" onChange={this.onChange}/>
+                </FormControl>
+                <FormControl margin="normal" fullWidth>
+                  <InputLabel htmlFor="series">Series</InputLabel>
+                  <Input id="series" value={currentBook.series} name="series" autoComplete="series" onChange={this.onChange}/>
+                </FormControl>
+                <FormControl margin="normal" fullWidth>
+                  <InputLabel htmlFor="volume">Volume</InputLabel>
+                  <Input id="volume" value={currentBook.volume} name="volume" autoComplete="volume" onChange={this.onChange}/>
+                </FormControl>
+                <FormControl margin="normal" fullWidth>
+                  <InputLabel htmlFor="published">Published</InputLabel>
+                  <Input id="published" type="date" value={currentBook.published} name="published" autoComplete="published" onChange={this.onChange}/>
+                </FormControl>
+                <FormControl margin="normal" fullWidth>
+                  <InputLabel htmlFor="publisher">Publisher</InputLabel>
+                  <Input id="publisher" value={currentBook.publisher} name="publisher" autoComplete="publisher" onChange={this.onChange}/>
+                </FormControl>
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  className={classes.submit}
+                >
+                  Update
+                </Button>
+              </form>
+            </Row>
+            <Row vertical='start'>
+              <IconButton color="secondary" component="a" target="_new" href={currentBook.detailsURL} className={classes.icon} alt="more informations">
+                <InfoIcon/>
+              </IconButton>
+            </Row>
+          </Column>
+        </Row>
+      </Column>
+      </Paper>  
+      </main>
+    );
+    
     return (
       <div>
-          <Fade
-            in={loading}
-            style={{
-              transitionDelay: loading ? '600ms' : '0ms',
-            }}
-            unmountOnExit
-          >
-            <LinearProgress />
-          </Fade>
-          <GridList cellHeight={210} cols={6} className={classes.gridList}>
-              <GridListTile spacing={5} key="Subheader" cols={1} style={{ height: 'auto' }}>
-                <ListSubheader component="div"></ListSubheader>
-              </GridListTile>
-            {books.map(book => (
-                <GridListTile key={book.uid}>
-                <img src={book.imageURL} alt={book.title} />
-                <GridListTileBar
-                  title={book.title}
-                  subtitle={<span>by: {book.author}</span>}
-                  actionIcon={
-                    <Tooltip title={this.getTooltip(book)} interactive>
-                      <IconButton className={classes.icon}>
-                        <InfoIcon />
-                      </IconButton>
-                    </Tooltip>
-                  }
-                />
-              </GridListTile>
-            ))}
-          </GridList>
-        </div>
-    );
+        <Fade
+          in={loading}
+          style={{
+            transitionDelay: loading ? '600ms' : '0ms',
+          }}
+          unmountOnExit
+        >
+          <LinearProgress />
+        </Fade>
+        <GridList cellHeight={180} cols={6} spacing={1} className={classes.gridList}>
+          {books.map(book => (
+              <GridListTile key={book.uid}>
+              <img src={book.imageURL} alt={book.title} />
+              <GridListTileBar
+                title={book.title}
+                subtitle={<span>{book.author}</span>}
+                actionIcon={
+                  <div>
+                    <IconButton onClick={this.toggleDrawer(true, book)} className={classes.icon}>
+                      <InfoIcon/>
+                    </IconButton>
+                  </div>
+                }
+              />
+            </GridListTile>
+          ))}
+        </GridList>
+        <Drawer style={{ backgroundColor: 'transparent' }} classes={{paper: classes.paper}} anchor="bottom" open={this.state.drawerOpen} onClose={this.toggleDrawer(false)}>
+            {sideList}
+        </Drawer>
+      </div>
+  );
   }
 }
 
