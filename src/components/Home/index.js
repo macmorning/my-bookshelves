@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
 import { withAuthorization } from '../Session';
 import { withFirebase } from '../Firebase';
-import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
+import withWidth, { isWidthUp } from '@material-ui/core/withWidth';
+import compose from 'recompose/compose';
+import PropTypes from 'prop-types';
 import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
 import GridListTileBar from '@material-ui/core/GridListTileBar';
@@ -15,11 +17,10 @@ import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 import { Column, Row } from 'simple-flexbox';
 import FormControl from '@material-ui/core/FormControl';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Checkbox from '@material-ui/core/Checkbox';
 import Input from '@material-ui/core/Input';
 import InputLabel from '@material-ui/core/InputLabel';
 import Button from '@material-ui/core/Button';
+import MediaQuery from 'react-responsive';
 
 const styles = theme => ({
   root: {
@@ -82,6 +83,18 @@ class HomePage extends Component {
       currentBook: (book ? book : {})
     });
   };
+  getGridListCols = () => {
+    if (isWidthUp('xl', this.props.width)) {
+      return 6;
+    }
+    if (isWidthUp('md', this.props.width)) {
+      return 4;
+    }
+    if (isWidthUp('sm', this.props.width)) {
+      return 2;
+    }
+    return 1;
+  }
 
   loadBooks() {
     let compare = (a,b) => {
@@ -111,7 +124,22 @@ class HomePage extends Component {
   componentWillUnmount() {
     this.props.firebase.books().off();
   }
-
+  handleSubmit(event) {
+    console.log(event);
+    event.preventDefault();
+  }
+  onBookChange = event => {
+    console.log("name > " + event.target.name + " / value > " + event.target.value);
+    let targetName = event.target.name;
+    let targetValue = event.target.value;
+    console.log(this.state.currentBook);
+    this.setState(prevState => ({
+      currentBook: {
+          ...prevState.currentBook,
+          [targetName]: targetValue
+      }
+    }));
+  };
   render() {
     const { books, loading, currentBook } = this.state; 
     const { classes } = this.props;
@@ -125,31 +153,41 @@ class HomePage extends Component {
           </Typography>
         </Row>
         <Row horizontal='start' vertical='start'>
-          <Column flexGrow={1} horizontal='center'>
-            <img src={currentBook.imageURL} style={{ height:"400px" }} alt=""/>
-          </Column>
+          <MediaQuery query="(min-device-width: 1000px)">
+            <Column className={classes.imgCol} flexGrow={1} horizontal='center'>
+              <img src={currentBook.imageURL} style={{ height:"400px" }} alt=""/>
+            </Column>
+          </MediaQuery>
           <Column flexGrow={1} alignItems='start'>
             <Row>
-              <form className={classes.form} onSubmit={this.onSubmit}>
+              <form className={classes.form} onSubmit={this.handleSubmit}>
+                <FormControl margin="normal" fullWidth>
+                  <InputLabel htmlFor="title">Title</InputLabel>
+                  <Input id="title" value={currentBook.title} name="title" autoComplete="title" onChange={this.onBookChange}/>
+                </FormControl>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="author">Author</InputLabel>
-                  <Input id="author" value={currentBook.author} name="author" autoComplete="author" onChange={this.onChange}/>
+                  <Input id="author" value={currentBook.author} name="author" autoComplete="author" onChange={this.onBookChange}/>
                 </FormControl>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="series">Series</InputLabel>
-                  <Input id="series" value={currentBook.series} name="series" autoComplete="series" onChange={this.onChange}/>
+                  <Input id="series" value={currentBook.series} name="series" autoComplete="series" onChange={this.onBookChange}/>
                 </FormControl>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="volume">Volume</InputLabel>
-                  <Input id="volume" value={currentBook.volume} name="volume" autoComplete="volume" onChange={this.onChange}/>
+                  <Input id="volume" type="number" value={currentBook.volume} name="volume" autoComplete="volume" onChange={this.onBookChange}/>
                 </FormControl>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="published">Published</InputLabel>
-                  <Input id="published" type="date" value={currentBook.published} name="published" autoComplete="published" onChange={this.onChange}/>
+                  <Input id="published" type="date" value={currentBook.published} name="published" onChange={this.onBookChange}/>
                 </FormControl>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="publisher">Publisher</InputLabel>
-                  <Input id="publisher" value={currentBook.publisher} name="publisher" autoComplete="publisher" onChange={this.onChange}/>
+                  <Input id="publisher" value={currentBook.publisher} name="publisher" autoComplete="publisher" onChange={this.onConBookChangehange}/>
+                </FormControl>
+                <FormControl margin="normal" fullWidth>
+                  <InputLabel htmlFor="imageURL">Image URL</InputLabel>
+                  <Input id="imageURL" value={currentBook.imageURL} name="imageURL" onChange={this.onBookChange}/>
                 </FormControl>
                 <Button
                   type="submit"
@@ -185,20 +223,13 @@ class HomePage extends Component {
         >
           <LinearProgress />
         </Fade>
-        <GridList cellHeight={180} cols={6} spacing={1} className={classes.gridList}>
+        <GridList cellHeight={180} cols={this.getGridListCols()} spacing={1} className={classes.gridList}>
           {books.map(book => (
-              <GridListTile key={book.uid}>
+              <GridListTile key={book.uid} onClick={this.toggleDrawer(true, book)}>
               <img src={book.imageURL} alt={book.title} />
               <GridListTileBar
                 title={book.title}
                 subtitle={<span>{book.author}</span>}
-                actionIcon={
-                  <div>
-                    <IconButton onClick={this.toggleDrawer(true, book)} className={classes.icon}>
-                      <InfoIcon/>
-                    </IconButton>
-                  </div>
-                }
               />
             </GridListTile>
           ))}
@@ -217,4 +248,10 @@ HomePage.propTypes = {
 };
 const condition = authUser => !!authUser;
 
-export default withStyles(styles)(withFirebase(withAuthorization(condition)(HomePage)));
+export default withWidth()(withStyles(styles)(withFirebase(withAuthorization(condition)(HomePage))));
+/*export default compose(
+  withFirebase(),
+  withStyles(styles),
+  withAuthorization(condition),
+  withWidth(),
+)(HomePage);*/

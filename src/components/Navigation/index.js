@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import SignOutButton from '../SignOut';
 import * as ROUTES from '../../constants/routes';
 import { AuthUserContext } from '../Session';
+import MediaQuery from 'react-responsive';
 
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
@@ -56,7 +57,9 @@ class NavigationAuth extends React.Component {
               <AccountBoxIcon/>
             </IconButton>
             <Typography variant="h6" color="inherit" className={classes.grow}>
-              BD Tek
+              <MediaQuery query="(min-device-width: 1000px)">
+                BD Tek
+                </MediaQuery>
             </Typography>
             <SignOutButton />
           </Toolbar>
