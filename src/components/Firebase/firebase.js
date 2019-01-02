@@ -17,6 +17,7 @@ class Firebase {
 
     this.auth = app.auth();
     this.db = app.database();
+    this.maxBooks = 50;
   }
   // *** Auth API ***
 
@@ -45,8 +46,8 @@ class Firebase {
 
 
   // *** Book API ***
-
-    books = uid => this.db.ref(`bd/${uid}`).limitToLast(40);
+    books = uid => this.db.ref(`bd/${uid}`).limitToLast(this.maxBooks);
+    doUpdateBook = (uid, bookid, book) => (book.computedOrderField = book.series + "_" + book.volume.padStart(4, '0') + "_" + book.title) && (this.db.ref(`bd/${uid}/${bookid}`).update(book));
 }
 
 export default Firebase;

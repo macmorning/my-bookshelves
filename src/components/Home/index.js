@@ -3,7 +3,7 @@ import { withAuthorization } from '../Session';
 import { withFirebase } from '../Firebase';
 import { withStyles } from '@material-ui/core/styles';
 import withWidth, { isWidthUp } from '@material-ui/core/withWidth';
-import compose from 'recompose/compose';
+// import compose from 'recompose/compose';
 import PropTypes from 'prop-types';
 import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
@@ -21,6 +21,12 @@ import Input from '@material-ui/core/Input';
 import InputLabel from '@material-ui/core/InputLabel';
 import Button from '@material-ui/core/Button';
 import MediaQuery from 'react-responsive';
+import Snackbar from '@material-ui/core/Snackbar';
+import SnackbarContent from '@material-ui/core/SnackbarContent';
+import green from '@material-ui/core/colors/green';
+import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+import Fab from '@material-ui/core/Fab';
+import AddIcon from '@material-ui/icons/Add';
 
 const styles = theme => ({
   root: {
@@ -54,7 +60,19 @@ const styles = theme => ({
   },
   form: {
     margin: '10px'
-  }
+  },
+  message: {
+    display: 'flex',
+    alignItems: 'center'
+  },
+  success: {
+    backgroundColor: green[600],
+  },
+  fab: {
+    position: 'fixed',
+    bottom: theme.spacing.unit * 2,
+    right: theme.spacing.unit * 2,
+  },
 });
 
 class HomePage extends Component {
@@ -66,7 +84,8 @@ class HomePage extends Component {
       user: "",
       tooltipOpen: false,
       drawerOpen: false,
-      currentBook: {}
+      currentBook: {},
+      showSuccess: false
     };
     let auth = this.props.firebase.auth;
     auth.onAuthStateChanged((user) => {
@@ -82,7 +101,8 @@ class HomePage extends Component {
       drawerOpen: open,
       currentBook: (book ? book : {})
     });
-  };
+  }
+
   getGridListCols = () => {
     if (isWidthUp('xl', this.props.width)) {
       return 6;
@@ -105,7 +125,9 @@ class HomePage extends Component {
       return 0;
     }
 
+
     this.setState({ loading: true });
+
     this.props.firebase.books(this.state.user).orderByChild("computedOrderField").on('value', snapshot => {
       const booksObject = snapshot.val();
 
@@ -124,21 +146,38 @@ class HomePage extends Component {
   componentWillUnmount() {
     this.props.firebase.books().off();
   }
-  handleSubmit(event) {
-    console.log(event);
+  onBookSubmit = event => {
+    console.log(this.state.currentBook);
     event.preventDefault();
+    this.props.firebase.doUpdateBook(this.state.user,this.state.currentBook.uid,this.state.currentBook)
+    .then(() => {
+      this.setState({ 
+        showSuccess: true,
+        drawerOpen: false
+       });
+    })
+    .catch(error => {
+      this.setState({ error });
+    });
   }
   onBookChange = event => {
-    console.log("name > " + event.target.name + " / value > " + event.target.value);
     let targetName = event.target.name;
     let targetValue = event.target.value;
-    console.log(this.state.currentBook);
+    // Make a copy of the object stored in state before replacing it
     this.setState(prevState => ({
       currentBook: {
           ...prevState.currentBook,
           [targetName]: targetValue
       }
     }));
+  };
+
+  onSnackClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+
+    this.setState({ showSuccess: false });
   };
   render() {
     const { books, loading, currentBook } = this.state; 
@@ -160,10 +199,10 @@ class HomePage extends Component {
           </MediaQuery>
           <Column flexGrow={1} alignItems='start'>
             <Row>
-              <form className={classes.form} onSubmit={this.handleSubmit}>
+              <form className={classes.form} onSubmit={this.onBookSubmit}>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="title">Title</InputLabel>
-                  <Input id="title" value={currentBook.title} name="title" autoComplete="title" onChange={this.onBookChange}/>
+                  <Input id="title" value={currentBook.title} name="title" autoComplete="title" onChange={this.onBookChange} autofocus/>
                 </FormControl>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="author">Author</InputLabel>
@@ -191,12 +230,19 @@ class HomePage extends Component {
                 </FormControl>
                 <Button
                   type="submit"
-                  fullWidth
                   variant="contained"
                   color="primary"
                   className={classes.submit}
                 >
-                  Update
+                  Save
+                </Button>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  className={classes.margin}
+                  onClick={this.toggleDrawer(false)}
+                >
+                  Close
                 </Button>
               </form>
             </Row>
@@ -228,8 +274,8 @@ class HomePage extends Component {
               <GridListTile key={book.uid} onClick={this.toggleDrawer(true, book)}>
               <img src={book.imageURL} alt={book.title} />
               <GridListTileBar
-                title={book.title}
-                subtitle={<span>{book.author}</span>}
+              title={book.title}
+              subtitle={<span><span color="secondary">{book.series}</span><span>{book.volume>0 ? " - " + book.volume : ""}</span></span>}
               />
             </GridListTile>
           ))}
@@ -237,6 +283,26 @@ class HomePage extends Component {
         <Drawer style={{ backgroundColor: 'transparent' }} classes={{paper: classes.paper}} anchor="bottom" open={this.state.drawerOpen} onClose={this.toggleDrawer(false)}>
             {sideList}
         </Drawer>
+        <Snackbar
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          open={this.state.showSuccess}
+          autoHideDuration={3000}
+          onClose={this.onSnackClose}
+          ContentProps={{
+            'aria-describedby': 'message-id',
+          }} >
+          <SnackbarContent
+              className={classes.success}
+              aria-describedby="client-snackbar"
+              message={<span id="message-id"><CheckCircleIcon/>Changes saved</span>}
+              />
+        </Snackbar>
+        <Fab color="primary" aria-label="Add" className={classes.fab}>
+          <AddIcon />
+        </Fab>    
       </div>
   );
   }
