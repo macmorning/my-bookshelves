@@ -13,7 +13,6 @@ import Toolbar from '@material-ui/core/Toolbar';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
-import HomeIcon from '@material-ui/icons/Home';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import LibraryBooksIcon from '@material-ui/icons/LibraryBooks';
 
@@ -47,9 +46,6 @@ class NavigationAuth extends React.Component {
       <div className={classes.root}>
         <AppBar>
           <Toolbar>
-            <IconButton color="inherit" component={Link} key="Landing" to={ROUTES.LANDING}>
-              <HomeIcon/>
-            </IconButton>
             <IconButton color="inherit" component={Link} key="Home" to={ROUTES.HOME}>
               <LibraryBooksIcon/>
             </IconButton>            

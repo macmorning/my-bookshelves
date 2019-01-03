@@ -4,6 +4,7 @@ import { withFirebase } from '../Firebase';
 import { withStyles } from '@material-ui/core/styles';
 import withWidth, { isWidthUp } from '@material-ui/core/withWidth';
 // import compose from 'recompose/compose';
+import Scanner from '../Scanner';
 import PropTypes from 'prop-types';
 import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
@@ -23,10 +24,15 @@ import Button from '@material-ui/core/Button';
 import MediaQuery from 'react-responsive';
 import Snackbar from '@material-ui/core/Snackbar';
 import SnackbarContent from '@material-ui/core/SnackbarContent';
-import green from '@material-ui/core/colors/green';
-import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import Fab from '@material-ui/core/Fab';
+import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import AddIcon from '@material-ui/icons/Add';
+import green from '@material-ui/core/colors/green';
+
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogTitle from '@material-ui/core/DialogTitle';
 
 const styles = theme => ({
   root: {
@@ -85,7 +91,9 @@ class HomePage extends Component {
       tooltipOpen: false,
       drawerOpen: false,
       currentBook: {},
-      showSuccess: false
+      showSuccess: false,
+      scanning: false,
+      results: []
     };
     let auth = this.props.firebase.auth;
     auth.onAuthStateChanged((user) => {
@@ -100,6 +108,17 @@ class HomePage extends Component {
     this.setState({
       drawerOpen: open,
       currentBook: (book ? book : {})
+    });
+  }
+
+  startScan = () => {
+    this.setState({
+      scanning: true
+    });
+  }
+  stopScan = () => {
+    this.setState({
+      scanning: false
     });
   }
 
@@ -146,6 +165,16 @@ class HomePage extends Component {
   componentWillUnmount() {
     this.props.firebase.books().off();
   }
+
+
+  onDetected = event => {
+    let code = event.codeResult.code;
+    if (this.state.results.indexOf(code) === -1) {
+      this.setState(prevState => ({
+        results: [...prevState.results,code]
+      }));
+    }
+  }
   onBookSubmit = event => {
     console.log(this.state.currentBook);
     event.preventDefault();
@@ -182,6 +211,7 @@ class HomePage extends Component {
   render() {
     const { books, loading, currentBook } = this.state; 
     const { classes } = this.props;
+
     const sideList = (
       <main className={classes.main}>
       <Paper className={classes.root} elevation={2}>
@@ -254,7 +284,7 @@ class HomePage extends Component {
           </Column>
         </Row>
       </Column>
-      </Paper>  
+      </Paper>
       </main>
     );
     
@@ -300,9 +330,29 @@ class HomePage extends Component {
               message={<span id="message-id"><CheckCircleIcon/>Changes saved</span>}
               />
         </Snackbar>
-        <Fab color="primary" aria-label="Add" className={classes.fab}>
+        <Fab color="primary" aria-label="Add" className={classes.fab} onClick={this.startScan}>
           <AddIcon />
-        </Fab>    
+        </Fab>
+
+        <Dialog
+          open={this.state.scanning}
+          onClose={this.stopScan}
+          aria-labelledby="draggable-dialog-title"
+          maxWidth="md"
+        >
+          <DialogTitle id="draggable-dialog-title">Scan a new book barcode</DialogTitle>
+          <DialogContent>
+            <Scanner onDetected={this.onDetected}/>
+            <ul className="results">
+                    {this.state.results.map((result) => (<li key={result}>{result}</li>))}
+            </ul>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={this.stopScan} color="secondary">
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
   );
   }
