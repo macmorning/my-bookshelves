@@ -17,7 +17,7 @@ class Firebase {
 
     this.auth = app.auth();
     this.db = app.database();
-    this.maxBooks = 50;
+    this.maxBooks = 500;
   }
   // *** Auth API ***
 

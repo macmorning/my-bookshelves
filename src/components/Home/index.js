@@ -6,9 +6,6 @@ import withWidth, { isWidthUp } from '@material-ui/core/withWidth';
 // import compose from 'recompose/compose';
 import Scanner from '../Scanner';
 import PropTypes from 'prop-types';
-import GridList from '@material-ui/core/GridList';
-import GridListTile from '@material-ui/core/GridListTile';
-import GridListTileBar from '@material-ui/core/GridListTileBar';
 import IconButton from '@material-ui/core/IconButton';
 import InfoIcon from '@material-ui/icons/Info';
 import LinearProgress from '@material-ui/core/LinearProgress';
@@ -25,7 +22,6 @@ import MediaQuery from 'react-responsive';
 import Snackbar from '@material-ui/core/Snackbar';
 import SnackbarContent from '@material-ui/core/SnackbarContent';
 import Fab from '@material-ui/core/Fab';
-import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import AddIcon from '@material-ui/icons/Add';
 import green from '@material-ui/core/colors/green';
 
@@ -33,6 +29,8 @@ import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
+
+import MUIDataTable from "mui-datatables";
 
 const styles = theme => ({
   root: {
@@ -76,10 +74,11 @@ const styles = theme => ({
   },
   fab: {
     position: 'fixed',
-    bottom: theme.spacing.unit * 2,
+    bottom: theme.spacing.unit * 8,
     right: theme.spacing.unit * 2,
   },
 });
+
 
 class HomePage extends Component {
   constructor(props) {
@@ -95,6 +94,25 @@ class HomePage extends Component {
       scanning: false,
       results: []
     };
+
+    this.table_columns = ["uid", "series", "volume", "title", "author", "published", "publisher"];
+    this.table_options = {
+      onRowClick: (rowData, rowMeta) => { 
+        console.log(this.state.books);
+        console.log(rowMeta.dataIndex);
+        console.log(this.state.books[rowMeta.dataIndex]);
+        this.setState({
+          drawerOpen: true,
+          currentBook: this.state.books[rowMeta.dataIndex]
+        });
+      },
+      rowsPerPage: 50,
+      rowsPerPageOptions: [20,50,100],
+      selectableRows: false,
+      fixedHeader: true,
+      filterType: "multiselect"
+    }
+
     let auth = this.props.firebase.auth;
     auth.onAuthStateChanged((user) => {
       if (user) {
@@ -103,9 +121,9 @@ class HomePage extends Component {
       }
     });
   }
+
   toggleDrawer = (open, book) => () => {
-    console.log(book);
-    this.setState({
+     this.setState({
       drawerOpen: open,
       currentBook: (book ? book : {})
     });
@@ -122,18 +140,6 @@ class HomePage extends Component {
     });
   }
 
-  getGridListCols = () => {
-    if (isWidthUp('xl', this.props.width)) {
-      return 6;
-    }
-    if (isWidthUp('md', this.props.width)) {
-      return 4;
-    }
-    if (isWidthUp('sm', this.props.width)) {
-      return 2;
-    }
-    return 1;
-  }
 
   loadBooks() {
     let compare = (a,b) => {
@@ -143,13 +149,10 @@ class HomePage extends Component {
         return 1;
       return 0;
     }
-
-
     this.setState({ loading: true });
 
     this.props.firebase.books(this.state.user).orderByChild("computedOrderField").on('value', snapshot => {
       const booksObject = snapshot.val();
-
       const booksList = Object.keys(booksObject).map(key => ({
         ...booksObject[key],
         uid: key
@@ -162,6 +165,19 @@ class HomePage extends Component {
     });
   }
 
+  getBooksData() {
+    const booksData = [];
+    let table_columns = this.table_columns;
+    this.state.books.forEach(function(book) {
+      let line = [];
+      table_columns.forEach(function(attribute) {
+          line.push(book[attribute] !== undefined ? book[attribute] : "");
+      });
+      booksData.push(line);
+    })
+    return booksData;
+  }
+
   componentWillUnmount() {
     this.props.firebase.books().off();
   }
@@ -169,6 +185,7 @@ class HomePage extends Component {
 
   onDetected = event => {
     let code = event.codeResult.code;
+    console.log(code);
     if (this.state.results.indexOf(code) === -1) {
       this.setState(prevState => ({
         results: [...prevState.results,code]
@@ -209,7 +226,7 @@ class HomePage extends Component {
     this.setState({ showSuccess: false });
   };
   render() {
-    const { books, loading, currentBook } = this.state; 
+    const { loading, currentBook } = this.state; 
     const { classes } = this.props;
 
     const sideList = (
@@ -232,7 +249,7 @@ class HomePage extends Component {
               <form className={classes.form} onSubmit={this.onBookSubmit}>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="title">Title</InputLabel>
-                  <Input id="title" value={currentBook.title} name="title" autoComplete="title" onChange={this.onBookChange} autofocus/>
+                  <Input id="title" value={currentBook.title} name="title" autoComplete="title" onChange={this.onBookChange} autoFocus/>
                 </FormControl>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="author">Author</InputLabel>
@@ -248,11 +265,11 @@ class HomePage extends Component {
                 </FormControl>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="published">Published</InputLabel>
-                  <Input id="published" type="date" value={currentBook.published} name="published" onChange={this.onBookChange}/>
+                  <Input id="published" placeholder="" type="date" value={currentBook.published} name="published" onChange={this.onBookChange}/>
                 </FormControl>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="publisher">Publisher</InputLabel>
-                  <Input id="publisher" value={currentBook.publisher} name="publisher" autoComplete="publisher" onChange={this.onConBookChangehange}/>
+                  <Input id="publisher" value={currentBook.publisher} name="publisher" autoComplete="publisher" onChange={this.onBookChange}/>
                 </FormControl>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="imageURL">Image URL</InputLabel>
@@ -299,18 +316,12 @@ class HomePage extends Component {
         >
           <LinearProgress />
         </Fade>
-        <GridList cellHeight={180} cols={this.getGridListCols()} spacing={1} className={classes.gridList}>
-          {books.map(book => (
-              <GridListTile key={book.uid} onClick={this.toggleDrawer(true, book)}>
-              <img src={book.imageURL} alt={book.title} />
-              <GridListTileBar
-              title={book.title}
-              subtitle={<span><span color="secondary">{book.series}</span><span>{book.volume>0 ? " - " + book.volume : ""}</span></span>}
-              />
-            </GridListTile>
-          ))}
-        </GridList>
-        <Drawer style={{ backgroundColor: 'transparent' }} classes={{paper: classes.paper}} anchor="bottom" open={this.state.drawerOpen} onClose={this.toggleDrawer(false)}>
+        <MUIDataTable
+          data={ this.getBooksData() }
+          columns={this.table_columns}
+          options={this.table_options}
+        />
+        <Drawer classes={{paper: classes.paper}} anchor="bottom" open={this.state.drawerOpen} onClose={this.toggleDrawer(false)}>
             {sideList}
         </Drawer>
         <Snackbar
@@ -324,10 +335,10 @@ class HomePage extends Component {
           ContentProps={{
             'aria-describedby': 'message-id',
           }} >
-          <SnackbarContent
+        <SnackbarContent
               className={classes.success}
               aria-describedby="client-snackbar"
-              message={<span id="message-id"><CheckCircleIcon/>Changes saved</span>}
+              message={<span id="message-id">Changes saved</span>}
               />
         </Snackbar>
         <Fab color="primary" aria-label="Add" className={classes.fab} onClick={this.startScan}>

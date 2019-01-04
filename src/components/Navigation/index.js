@@ -1,11 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-import SignOutButton from '../SignOut';
 import * as ROUTES from '../../constants/routes';
 import { AuthUserContext } from '../Session';
-import MediaQuery from 'react-responsive';
-
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 import AppBar from '@material-ui/core/AppBar';
@@ -16,7 +13,8 @@ import IconButton from '@material-ui/core/IconButton';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import LibraryBooksIcon from '@material-ui/icons/LibraryBooks';
 
-const styles = {
+
+const styles = theme => ({
   root: {
     flexGrow: 1,
   },
@@ -25,8 +23,8 @@ const styles = {
   },
   list: {
     width: 250,
-  }
-};
+  },
+});
 
 function Navigation(props) {
   return (
@@ -46,18 +44,18 @@ class NavigationAuth extends React.Component {
       <div className={classes.root}>
         <AppBar>
           <Toolbar>
+            <Typography variant="h6" color="inherit">
+              BD Tek
+            </Typography>
+            
+            <div className={classes.grow} />
+
             <IconButton color="inherit" component={Link} key="Home" to={ROUTES.HOME}>
               <LibraryBooksIcon/>
             </IconButton>            
             <IconButton color="inherit" component={Link} key="Account" to={ROUTES.ACCOUNT}>
               <AccountBoxIcon/>
             </IconButton>
-            <Typography variant="h6" color="inherit" className={classes.grow}>
-              <MediaQuery query="(min-device-width: 1000px)">
-                BD Tek
-                </MediaQuery>
-            </Typography>
-            <SignOutButton />
           </Toolbar>
         </AppBar>
       </div>

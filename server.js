@@ -1,20 +1,23 @@
-var PORT = process.env.PORT || 8080;
-var ADDRESS = process.env.IP;
-var SERVERDIR = "";
+const PORT = process.env.PORT || 8080;
+const ADDRESS = process.env.IP;
+const SERVERDIR = "";
 
-var http = require('http'),
+const http = require('http'),
     url = require('url'),
     fs = require('fs'),
-    util = require('util');
+    https = require("https"),
+    parseString = require('xml2js').parseString;
 require('dotenv').config();
 
 const logConfig = {
     http: (process.env.LOG_HTTP == "true" ? true : false),
     httpdebug: (process.env.LOG_HTTPDEBUG == "true" ? true : false),
     lookup: (process.env.LOG_LOOKUP  == "true" ? true : false)
-}
+};
 const lookupConfig = {
-    api_key: process.env.LIBTHING_API_KEY || false
+    libthing_api_key: process.env.LIBTHING_API_KEY || false,
+    libthing_lastcall_timestamp: "0",
+    libthing_baseurl: "https://www.librarything.com/services/rest/1.1/?method=librarything.ck.getwork&isbn=@@isbn@@&apikey=@@apikey@@"
 };
 
 function escapeHtml(unsafe) {
@@ -34,10 +37,10 @@ function escapeHtml(unsafe) {
 
 function currTime() {
     // write current time in HH:mm format
-    var currentDate = new Date();
-    var hours = currentDate.getHours();
+    let currentDate = new Date();
+    let hours = currentDate.getHours();
     if (hours < 10) { hours = "0" + hours; }
-    var minutes = currentDate.getMinutes();
+    let minutes = currentDate.getMinutes();
     if (minutes < 10) { minutes = "0" + minutes; }
     return(hours + ":" + minutes);
 }
@@ -84,6 +87,24 @@ function resUnauthorized(res,err,data) {
 function lookup(isbn) {
     // http://www.librarything.com/services/rest/documentation/1.1/
     log("lookup", "Looking for > " + isbn);
+    if (lookupConfig.libthing_lastcall_timestamp > (Date.now() - 60000)) {
+        log("lookup", "... it's to soon to call the service again, not looking up");
+        return false;
+    }
+    lookupConfig.libthing_lastcall_timestamp = Date.now();
+    let url = lookupConfig.libthing_baseurl.replace("@@apikey@@",lookupConfig.libthing_api_key).replace("@@isbn@@",isbn);
+    log("lookup", "... url: " + url);
+    https.get(url, res => {
+        res.setEncoding("utf8");
+        let response = "";
+        res.on("data", data => {
+            response += data;
+        });
+        res.on("end", () => {
+           response = parseString(response);
+           console.log(response);
+        });
+    });
 }
 
 
@@ -98,26 +119,24 @@ http.createServer(function (req, res) {
 //
 // ROUTING
 //
-   var url_parts = url.parse(req.url);
+    let url_parts = url.parse(req.url);
 
     // REST services
     if(url_parts.pathname.substr(0, 5) === '/rest') {
-        // expected :    /rest/<alias>/<action>/<ean>
-        var request = url_parts.pathname.split("/");
-        var action = escapeHtml(request[3]);
-        var alias = escapeHtml(request[2]);
-        var ean = escapeHtml(request[4]);
-        log('http', 'Service called : ' + action + ' for ' + alias + ', ean : ' + ean);
-        if(action === "push") {
-            if(alias && ean) {
-                if(true) {
-                    res.statusCode = 200;
-                    res.end("item added");
-                    return true;
-                } else {
-                    return resInternalError(res,"error");
-                }
-            } 
+        // expected :    /rest/<action>/<ean>
+        let request = url_parts.pathname.split("/");
+        let action = escapeHtml(request[2]);
+        let ean = escapeHtml(request[3]);
+        log('http', 'Service called : ' + action + ', ean : ' + ean);
+        if(action === "lookup" && ean) {
+            let book = lookup(ean);
+            if(book) {
+                res.statusCode = 200;
+                res.end("book found");
+                return true;
+            } else {
+                return resInternalError(res,"error");
+            }
         }
         return resBadRequest(res,"bad request");
     }
@@ -127,7 +146,7 @@ http.createServer(function (req, res) {
    
     else {
         log('http', 'client file request');
-        var file='';
+        let file='';
         if(url_parts.pathname === '/' || url_parts.pathname === '/build' || url_parts.pathname === '/build/') {
             file = 'index.html';
         }  else if(url_parts.pathname.substr(0, 8) === '/favicon') {
@@ -156,7 +175,7 @@ http.createServer(function (req, res) {
                         resInternalError(res,'internal server error',err);
                     }
                     else {
-                        var etag = stat.size + '-' + Date.parse(stat.mtime);
+                        let etag = stat.size + '-' + Date.parse(stat.mtime);
                         res.setHeader('Last-Modified', stat.mtime);
                         log('httpdebug', '... etag : ' + etag);
                         log('httpdebug', '... req.if-none-match : ' + req.headers['if-none-match']);

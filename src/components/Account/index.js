@@ -9,6 +9,7 @@ import { compose } from 'recompose';
 import { withFirebase } from '../Firebase';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
+import SignOutButton from '../SignOut';
 
 const AccountPage = () => (
   <AuthUserContext.Consumer>
@@ -18,6 +19,7 @@ const AccountPage = () => (
         <PasswordChangeForm />
         <EmailChangeForm user={authUser}/>
         <InformationsChangeForm />
+        <SignOutButton />
       </div>
     )}
   </AuthUserContext.Consumer>
