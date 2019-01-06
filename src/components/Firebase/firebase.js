@@ -47,7 +47,8 @@ class Firebase {
 
   // *** Book API ***
     books = uid => this.db.ref(`bd/${uid}`).limitToLast(this.maxBooks);
-    doUpdateBook = (uid, bookid, book) => (book.computedOrderField = book.series + "_" + book.volume.padStart(4, '0') + "_" + book.title) && (this.db.ref(`bd/${uid}/${bookid}`).update(book));
+    doUpdateBook = (uid, bookid, book) => (book.computedOrderField = (book.series ? book.series + (book.volume ? "_" + book.volume.padStart(4, '0') : "") : "") + "_" + book.title) && (this.db.ref(`bd/${uid}/${bookid}`).update(book));
+    doAddBook = (uid, bookid) => (this.db.ref(`bd/${uid}/${bookid}`).set({ needLookup: 1}));
 }
 
 export default Firebase;

@@ -92,7 +92,7 @@ class HomePage extends Component {
       currentBook: {},
       showSuccess: false,
       scanning: false,
-      results: []
+      isbn: ""
     };
 
     this.table_columns = ["uid", "series", "volume", "title", "author", "published", "publisher"];
@@ -127,6 +127,7 @@ class HomePage extends Component {
       drawerOpen: open,
       currentBook: (book ? book : {})
     });
+    console.log(book);
   }
 
   startScan = () => {
@@ -139,7 +140,6 @@ class HomePage extends Component {
       scanning: false
     });
   }
-
 
   loadBooks() {
     let compare = (a,b) => {
@@ -185,15 +185,11 @@ class HomePage extends Component {
 
   onDetected = event => {
     let code = event.codeResult.code;
-    console.log(code);
-    if (this.state.results.indexOf(code) === -1) {
-      this.setState(prevState => ({
-        results: [...prevState.results,code]
-      }));
+    if (this.state.isbn !== code) {
+      this.setState( { isbn: code });
     }
   }
   onBookSubmit = event => {
-    console.log(this.state.currentBook);
     event.preventDefault();
     this.props.firebase.doUpdateBook(this.state.user,this.state.currentBook.uid,this.state.currentBook)
     .then(() => {
@@ -206,6 +202,23 @@ class HomePage extends Component {
       this.setState({ error });
     });
   }
+  onBookAdd = event => {
+    console.log("adding " + this.state.isbn);
+    this.setState({
+      scanning: false
+    });
+    this.props.firebase.doAddBook(this.state.user,this.state.isbn)
+    .then(() => {
+      this.setState({ 
+        showSuccess: true,
+        drawerOpen: false
+       });
+    })
+    .catch(error => {
+      this.setState({ error });
+    });
+  }
+
   onBookChange = event => {
     let targetName = event.target.name;
     let targetValue = event.target.value;
@@ -217,7 +230,11 @@ class HomePage extends Component {
       }
     }));
   };
-
+  onISBNChange = event => {
+    let targetValue = event.target.value;
+    // Make a copy of the object stored in state before replacing it
+    this.setState({ isbn: targetValue});
+  }
   onSnackClose = (event, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -275,22 +292,14 @@ class HomePage extends Component {
                   <InputLabel htmlFor="imageURL">Image URL</InputLabel>
                   <Input id="imageURL" value={currentBook.imageURL} name="imageURL" onChange={this.onBookChange}/>
                 </FormControl>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  className={classes.submit}
-                >
-                  Save
-                </Button>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  className={classes.margin}
-                  onClick={this.toggleDrawer(false)}
-                >
-                  Close
-                </Button>
+                <DialogActions>
+                  <Button type="submit" color="primary">
+                      Save
+                  </Button>
+                  <Button onClick={this.toggleDrawer(false)} color="secondary">
+                      Close
+                  </Button>
+                </DialogActions>
               </form>
             </Row>
             <Row vertical='start'>
@@ -354,11 +363,15 @@ class HomePage extends Component {
           <DialogTitle id="draggable-dialog-title">Scan a new book barcode</DialogTitle>
           <DialogContent>
             <Scanner onDetected={this.onDetected}/>
-            <ul className="results">
-                    {this.state.results.map((result) => (<li key={result}>{result}</li>))}
-            </ul>
+            <FormControl margin="normal" fullWidth>
+                  <InputLabel htmlFor="isbn">ISBN</InputLabel>
+                  <Input id="isbn" value={this.state.isbn} name="isbn" onChange={this.onISBNChange} autoFocus/>
+            </FormControl>
           </DialogContent>
           <DialogActions>
+          <Button onClick={this.onBookAdd} color="primary">
+              Add
+            </Button>
             <Button onClick={this.stopScan} color="secondary">
               Close
             </Button>
