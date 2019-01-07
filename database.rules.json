@@ -1,0 +1,16 @@
+{
+    "rules": {
+      ".read": "auth !== null",
+      "bd": {
+        "$usernode": {
+          ".write": "auth != null && auth.uid == $usernode",
+          ".indexOn": "computedOrderField"
+        },
+      },
+      "users": {
+        "$usernode": {
+          ".write": "auth != null && auth.uid == $usernode"
+        }
+      }
+    }
+}
