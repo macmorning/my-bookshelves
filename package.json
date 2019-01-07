@@ -2,14 +2,11 @@
   "name": "my-bookshelves",
   "version": "0.1.0",
   "private": true,
-  "main": "server.js",
   "dependencies": {
     "@material-ui/core": "^3.6.2",
     "@material-ui/icons": "^3.0.1",
-    "amazon-product-api": "^0.4.4",
     "dotenv": "^6.2.0",
     "firebase": "^5.6.0",
-    "firebase-admin": "^6.4.0",
     "mui-datatables": "^2.0.0-beta-45",
     "quagga": "^0.12.1",
     "react": "^16.6.3",
@@ -25,6 +22,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "postbuild": "mv build public",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
