@@ -148,7 +148,7 @@ function lookup(snapshot) {
     console.log(snapshot.key);
     let isbn = snapshot.key;
     log("lookup", "Looking for > " + isbn);
-    /*if (lookupConfig.libthing_lastcall_timestamp > (Date.now() - 60000)) {
+    if (lookupConfig.libthing_lastcall_timestamp > (Date.now() - 60000)) {
         log("lookup", "... it's to soon to call the service again, delaying");
         setTimeout(lookup(snapshot), 30000);
         return false;
@@ -166,8 +166,9 @@ function lookup(snapshot) {
            response = parseString(response, function(err, result) {
                 var dataRef = snapshot.ref;
                 let book = result.response.ltml[0].item[0];
+                console.log(JSON.stringify(book));
                 dataRef.update({
-                    title: book.title,
+                    title: book.title[0],
                     author: book.author[0]["_"],
                     imageURL: "",
                     detailsURL: book.url,
@@ -177,8 +178,8 @@ function lookup(snapshot) {
               });
            });
         });
-    });*/
-    var dataRef = snapshot.ref;
+    });
+    /*var dataRef = snapshot.ref;
     log("lookup", " ... Trying on amazon.fr");
     amazonConfig.AWSClient.itemLookup({
         idType: 'EAN',
