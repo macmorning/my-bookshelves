@@ -3,7 +3,6 @@ import { withAuthorization } from '../Session';
 import { withFirebase } from '../Firebase';
 import { withStyles } from '@material-ui/core/styles';
 import withWidth, { isWidthUp } from '@material-ui/core/withWidth';
-// import compose from 'recompose/compose';
 import Scanner from '../Scanner';
 import PropTypes from 'prop-types';
 import IconButton from '@material-ui/core/IconButton';
@@ -95,22 +94,24 @@ class HomePage extends Component {
       isbn: ""
     };
 
-    this.table_columns = ["uid", "series", "volume", "title", "author", "published", "publisher"];
+    let displayExtraColumns = (isWidthUp('sm', this.props.width) ? true : false);
+    let displayExtraOptions = (isWidthUp('md', this.props.width) ? true : false);
+    this.table_columns = ["uid", "series", "volume", "title", {name: "author",options: { display: displayExtraColumns }}, {name: "published",options: { display: displayExtraColumns }}, {name: "publisher",options: { display: displayExtraColumns }}];
     this.table_options = {
       onRowClick: (rowData, rowMeta) => { 
-        console.log(this.state.books);
-        console.log(rowMeta.dataIndex);
-        console.log(this.state.books[rowMeta.dataIndex]);
         this.setState({
           drawerOpen: true,
           currentBook: this.state.books[rowMeta.dataIndex]
         });
       },
-      rowsPerPage: 50,
+      rowsPerPage: (displayExtraColumns ? 50 : 20),
       rowsPerPageOptions: [20,50,100],
       selectableRows: false,
       fixedHeader: true,
-      filterType: "multiselect"
+      filterType: "multiselect",
+      print: displayExtraOptions,
+      download: displayExtraOptions,
+      filter: displayExtraOptions
     }
 
     let auth = this.props.firebase.auth;
@@ -127,7 +128,6 @@ class HomePage extends Component {
       drawerOpen: open,
       currentBook: (book ? book : {})
     });
-    console.log(book);
   }
 
   startScan = () => {
@@ -171,7 +171,11 @@ class HomePage extends Component {
     this.state.books.forEach(function(book) {
       let line = [];
       table_columns.forEach(function(attribute) {
-          line.push(book[attribute] !== undefined ? book[attribute] : "");
+          if (typeof attribute === 'object') {
+            line.push(book[attribute.name] !== undefined ? book[attribute.name] : "");
+          } else {
+            line.push(book[attribute] !== undefined ? book[attribute] : "");
+          }
       });
       booksData.push(line);
     })
@@ -203,7 +207,6 @@ class HomePage extends Component {
     });
   }
   onBookAdd = event => {
-    console.log("adding " + this.state.isbn);
     this.setState({
       scanning: false
     });
@@ -389,9 +392,3 @@ HomePage.propTypes = {
 const condition = authUser => !!authUser;
 
 export default withWidth()(withStyles(styles)(withFirebase(withAuthorization(condition)(HomePage))));
-/*export default compose(
-  withFirebase(),
-  withStyles(styles),
-  withAuthorization(condition),
-  withWidth(),
-)(HomePage);*/
