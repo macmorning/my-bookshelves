@@ -1,4 +1,7 @@
 export const styles = theme => ({
+    typography: {
+      useNextVariants: true,
+    },
     main: {
       width: 'auto',
       display: 'block', // Fix IE 11 issue.

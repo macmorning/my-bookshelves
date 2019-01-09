@@ -5,8 +5,6 @@ import { withStyles } from '@material-ui/core/styles';
 import withWidth, { isWidthUp } from '@material-ui/core/withWidth';
 import Scanner from '../Scanner';
 import PropTypes from 'prop-types';
-import IconButton from '@material-ui/core/IconButton';
-import InfoIcon from '@material-ui/icons/Info';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import Fade from '@material-ui/core/Fade';
 import Drawer from '@material-ui/core/Drawer';
@@ -254,10 +252,12 @@ class HomePage extends Component {
       <Paper className={classes.root} elevation={2}>
       <Column flexGrow={1}>
         <Row horizontal='center'>
-          <Typography variant="h5" component="h2">
-            {currentBook.title}
-          </Typography>
-        </Row>
+          <a target="_new" href={currentBook.detailsURL}>
+            <Typography variant="h5" component="h2">    
+              {currentBook.title}
+            </Typography>
+          </a>
+        </Row>  
         <Row horizontal='start' vertical='start'>
           <MediaQuery query="(min-device-width: 1000px)">
             <Column className={classes.imgCol} flexGrow={1} horizontal='center'>
@@ -295,6 +295,10 @@ class HomePage extends Component {
                   <InputLabel htmlFor="imageURL">Image URL</InputLabel>
                   <Input id="imageURL" value={currentBook.imageURL} name="imageURL" onChange={this.onBookChange}/>
                 </FormControl>
+                <FormControl margin="normal" fullWidth>
+                  <InputLabel htmlFor="detailsURL">Details URL</InputLabel>
+                  <Input id="detailsURL" value={currentBook.detailsURL} name="detailsURL" onChange={this.onBookChange}/>
+                </FormControl>
                 <DialogActions>
                   <Button type="submit" color="primary">
                       Save
@@ -304,11 +308,6 @@ class HomePage extends Component {
                   </Button>
                 </DialogActions>
               </form>
-            </Row>
-            <Row vertical='start'>
-              <IconButton color="secondary" component="a" target="_new" href={currentBook.detailsURL} className={classes.icon} alt="more informations">
-                <InfoIcon/>
-              </IconButton>
             </Row>
           </Column>
         </Row>

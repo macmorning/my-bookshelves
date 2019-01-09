@@ -13,6 +13,9 @@ code {
     monospace;
 }
 
+a {
+  text-decoration: none;
+}
 .drawingBuffer {
   display: none;
 }
