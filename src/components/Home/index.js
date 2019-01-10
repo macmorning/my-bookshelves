@@ -233,7 +233,6 @@ class HomePage extends Component {
   };
   onISBNChange = event => {
     let targetValue = event.target.value;
-    // Make a copy of the object stored in state before replacing it
     this.setState({ isbn: targetValue});
   }
   onSnackClose = (event, reason) => {
