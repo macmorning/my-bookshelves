@@ -17,6 +17,13 @@ class Firebase {
 
     this.auth = app.auth();
     this.db = app.database();
+    this.currDate = new Date();
+    let currDate = new Date();
+    let currMonth = currDate.getUTCMonth() + 1;
+    currMonth = currMonth.toString();
+    let currDay = currDate.getUTCDate();
+    currDay = currDay.toString();
+    this.currDateFormatted = currDate.getUTCFullYear() + '-' + currMonth.padStart(2, '0') + '-' + currDay.padStart(2, '0');
     this.maxBooks = 500;
   }
   // *** Auth API ***
@@ -48,7 +55,8 @@ class Firebase {
   // *** Book API ***
     books = uid => this.db.ref(`bd/${uid}`).limitToLast(this.maxBooks);
     doUpdateBook = (uid, bookid, book) => (book.computedOrderField = (book.series ? book.series + (book.volume ? "_" + book.volume.padStart(4, '0') : "") : "") + "_" + book.title) && (this.db.ref(`bd/${uid}/${bookid}`).update(book));
-    doAddBook = (uid, bookid) => (this.db.ref(`bd/${uid}/${bookid}`).set({ needLookup: 1}));
+    doAddBook = (uid, bookid) => (this.db.ref(`bd/${uid}/${bookid}`).set({ needLookup: 1, createDate: this.currDateFormatted}));
+    doRemoveBook = (uid, bookid) => (this.db.ref(`bd/${uid}/${bookid}`).remove());
 }
 
 export default Firebase;

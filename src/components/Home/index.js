@@ -14,6 +14,7 @@ import { Column, Row } from 'simple-flexbox';
 import FormControl from '@material-ui/core/FormControl';
 import Input from '@material-ui/core/Input';
 import InputLabel from '@material-ui/core/InputLabel';
+import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import MediaQuery from 'react-responsive';
 import Snackbar from '@material-ui/core/Snackbar';
@@ -23,6 +24,7 @@ import AddIcon from '@material-ui/icons/Add';
 import green from '@material-ui/core/colors/green';
 
 import Dialog from '@material-ui/core/Dialog';
+import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
@@ -57,7 +59,7 @@ const styles = theme => ({
   },
   paper: {
     paddingTop: '15px',
-    height: '550px',
+    height: '475px',
   },
   form: {
     margin: '10px'
@@ -86,6 +88,7 @@ class HomePage extends Component {
       user: "",
       tooltipOpen: false,
       drawerOpen: false,
+      confirm: false,
       currentBook: {},
       showSuccess: false,
       scanning: false,
@@ -94,7 +97,7 @@ class HomePage extends Component {
 
     let displayExtraColumns = (isWidthUp('sm', this.props.width) ? true : false);
     let displayExtraOptions = (isWidthUp('md', this.props.width) ? true : false);
-    this.table_columns = ["uid", "series", "volume", "title", {name: "author",options: { display: displayExtraColumns }}, {name: "published",options: { display: displayExtraColumns }}, {name: "publisher",options: { display: displayExtraColumns }}];
+    this.table_columns = ["createDate", {name: "uid",options: { display: displayExtraColumns }}, "series", "volume", "title", {name: "author",options: { display: displayExtraColumns }}, {name: "published",options: { display: displayExtraColumns }}, {name: "publisher",options: { display: displayExtraColumns }}];
     this.table_options = {
       onRowClick: (rowData, rowMeta) => { 
         this.setState({
@@ -136,6 +139,32 @@ class HomePage extends Component {
   stopScan = () => {
     this.setState({
       scanning: false
+    });
+  }
+
+  removeBook = () => {
+    this.setState({
+      confirm: true
+    })
+  }
+
+  closeConfirm = () => {
+    this.setState({
+      confirm: false
+    })
+  }
+
+  removeBookConfirmed = () => {
+    this.closeConfirm();
+    this.props.firebase.doRemoveBook(this.state.user,this.state.currentBook.uid)
+    .then(() => {
+      this.setState({ 
+        showSuccess: true,
+        drawerOpen: false
+       });
+    })
+    .catch(error => {
+      this.setState({ error });
     });
   }
 
@@ -264,49 +293,46 @@ class HomePage extends Component {
             </Column>
           </MediaQuery>
           <Column flexGrow={1} alignItems='start'>
-            <Row>
+            <Row style={{ maxHeight:"350px", overflow:"auto" }}>
               <form className={classes.form} onSubmit={this.onBookSubmit}>
-                <FormControl margin="normal" fullWidth>
-                  <InputLabel htmlFor="title">Title</InputLabel>
-                  <Input id="title" value={currentBook.title} name="title" autoComplete="title" onChange={this.onBookChange} autoFocus/>
-                </FormControl>
-                <FormControl margin="normal" fullWidth>
-                  <InputLabel htmlFor="author">Author</InputLabel>
-                  <Input id="author" value={currentBook.author} name="author" autoComplete="author" onChange={this.onBookChange}/>
-                </FormControl>
-                <FormControl margin="normal" fullWidth>
-                  <InputLabel htmlFor="series">Series</InputLabel>
-                  <Input id="series" value={currentBook.series} name="series" autoComplete="series" onChange={this.onBookChange}/>
-                </FormControl>
-                <FormControl margin="normal" fullWidth>
-                  <InputLabel htmlFor="volume">Volume</InputLabel>
-                  <Input id="volume" type="number" value={currentBook.volume} name="volume" autoComplete="volume" onChange={this.onBookChange}/>
-                </FormControl>
-                <FormControl margin="normal" fullWidth>
-                  <InputLabel htmlFor="published">Published</InputLabel>
-                  <Input id="published" placeholder="" type="date" value={currentBook.published} name="published" onChange={this.onBookChange}/>
-                </FormControl>
-                <FormControl margin="normal" fullWidth>
-                  <InputLabel htmlFor="publisher">Publisher</InputLabel>
-                  <Input id="publisher" value={currentBook.publisher} name="publisher" autoComplete="publisher" onChange={this.onBookChange}/>
-                </FormControl>
-                <FormControl margin="normal" fullWidth>
-                  <InputLabel htmlFor="imageURL">Image URL</InputLabel>
-                  <Input id="imageURL" value={currentBook.imageURL} name="imageURL" onChange={this.onBookChange}/>
-                </FormControl>
-                <FormControl margin="normal" fullWidth>
-                  <InputLabel htmlFor="detailsURL">Details URL</InputLabel>
-                  <Input id="detailsURL" value={currentBook.detailsURL} name="detailsURL" onChange={this.onBookChange}/>
-                </FormControl>
+                <TextField id="title"
+                  label="Title" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
+                  value={currentBook.title} onChange={this.onBookChange} autoFocus />
+                <TextField id="author"
+                  label="Author" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
+                  value={currentBook.author} onChange={this.onBookChange} />
+                <TextField id="series"
+                  label="Series" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
+                  value={currentBook.series} onChange={this.onBookChange} />
+                <TextField id="volume"
+                  label="Volume" type="number" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
+                  value={currentBook.volume} onChange={this.onBookChange} />
+                <TextField id="published"
+                  label="Published" type="date" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
+                  value={currentBook.published} onChange={this.onBookChange} />
+                <TextField id="publisher"
+                  label="Publisher" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
+                  value={currentBook.publisher} onChange={this.onBookChange} />
+                <TextField id="imageURL"
+                  label="image URL" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
+                  value={currentBook.imageURL} onChange={this.onBookChange} />
+                <TextField id="detailsURL"
+                  label="Details URL" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
+                  value={currentBook.detailsURL} onChange={this.onBookChange} />
+              </form>
+            </Row>
+            <Row>
                 <DialogActions>
                   <Button type="submit" color="primary">
                       Save
                   </Button>
-                  <Button onClick={this.toggleDrawer(false)} color="secondary">
+                  <Button onClick={this.toggleDrawer(false)} color="primary">
                       Close
                   </Button>
+                  <Button onClick={this.removeBook} color="secondary">
+                      Delete
+                  </Button>
                 </DialogActions>
-              </form>
             </Row>
           </Column>
         </Row>
@@ -356,12 +382,34 @@ class HomePage extends Component {
         </Fab>
 
         <Dialog
+          open={this.state.confirm}
+          onClose={this.closeConfirm}
+          aria-labelledby="confirm-book-remove-dialog-title"
+          aria-describedby="confirm-book-remove-dialog-description"
+        >
+          <DialogTitle id="confirm-book-remove-dialog-title">{"Confirm book removal"}</DialogTitle>
+          <DialogContentText style={{ margin: '10px' }} id="confirm-book-remove-dialog-description">
+              Are you sure you want to remove <br/>
+              {this.state.currentBook.title} <br/>
+              from your shelves?
+          </DialogContentText>
+          <DialogActions>
+            <Button onClick={this.removeBookConfirmed} color="secondary">
+              Yes
+            </Button>
+            <Button onClick={this.closeConfirm} color="primary" autoFocus>
+              Nooooo!
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
           open={this.state.scanning}
           onClose={this.stopScan}
-          aria-labelledby="draggable-dialog-title"
+          aria-labelledby="scan-dialog-title"
           maxWidth="md"
         >
-          <DialogTitle id="draggable-dialog-title">Scan a new book barcode</DialogTitle>
+          <DialogTitle id="scan-dialog-title">Scan a new book barcode</DialogTitle>
           <DialogContent>
             <Scanner onDetected={this.onDetected}/>
             <FormControl margin="normal" fullWidth>

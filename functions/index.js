@@ -1,18 +1,18 @@
 const functions = require('firebase-functions'),
       https = require('https'),
       parseString = require('xml2js').parseString,
-      request =require('request-promise');
+      admin = require('firebase-admin');
+      // request =require('request-promise');
 
 const lookupConfig = {
   // set using firebase functions:config:set libthing.key=...
   libthing_api_key: functions.config().libthing.key || false,
   libthing_baseurl: "https://www.librarything.com/services/rest/1.1/?method=librarything.ck.getwork&isbn=@@isbn@@&apikey=@@apikey@@"
 };
-    
+
 exports.fetchBookInformations = functions.database.ref('/bd/{user}/{ref}/needLookup').onWrite((snapshot, context) => { 
     // Grab the current value of what was written to the Realtime Database.
     let isbn = context.params.ref;
-    console.log('onWrite triggered on book ' + isbn + ', needLookup = ' + snapshot.after.val());
     if (!snapshot.after.exists() || snapshot.after.val() !== 1) {
         return null;
     }
