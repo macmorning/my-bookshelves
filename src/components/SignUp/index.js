@@ -1,15 +1,52 @@
 import React, { Component } from 'react';
 import { Link, withRouter } from 'react-router-dom';
-
+import { compose } from 'recompose';
 import { withFirebase } from '../Firebase';
+import withStyles from '@material-ui/core/styles/withStyles';
 import * as ROUTES from '../../constants/routes';
+import PropTypes from 'prop-types';
+import Avatar from '@material-ui/core/Avatar';
+import Button from '@material-ui/core/Button';
+
+import FormControl from '@material-ui/core/FormControl';
+import Input from '@material-ui/core/Input';
+import InputLabel from '@material-ui/core/InputLabel';
+import LockIcon from '@material-ui/icons/LockOutlined';
+import Paper from '@material-ui/core/Paper';
+import Typography from '@material-ui/core/Typography';
+
 
 const SignUpPage = () => (
   <div>
-    <h1>SignUp</h1>
     <SignUpForm />
   </div>
 );
+
+const styles = theme => ({
+  root: {
+    ...theme.mixins.gutters(),
+    paddingTop: theme.spacing.unit * 2,
+    paddingBottom: theme.spacing.unit * 2,
+  },
+  main: {
+    width: 'auto',
+    display: 'block', // Fix IE 11 issue.
+    marginLeft: theme.spacing.unit * 3,
+    marginRight: theme.spacing.unit * 3,
+    [theme.breakpoints.up(400 + theme.spacing.unit * 3 * 2)]: {
+      width: 400,
+      marginLeft: 'auto',
+      marginRight: 'auto',
+    },
+  },
+  paper: {
+    marginTop: theme.spacing.unit * 8,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: `${theme.spacing.unit * 2}px ${theme.spacing.unit * 3}px ${theme.spacing.unit * 3}px`,
+  }
+});
 
 const INITIAL_STATE = {
   username: '',
@@ -59,6 +96,7 @@ class SignUpFormBase extends Component {
   };
 
   render() {
+    const { classes } = this.props;
     const {
       username,
       email,
@@ -66,7 +104,6 @@ class SignUpFormBase extends Component {
       passwordTwo,
       error,
     } = this.state;
-
     const isInvalid =
       passwordOne !== passwordTwo ||
       passwordOne === '' ||
@@ -74,41 +111,45 @@ class SignUpFormBase extends Component {
       username === '';
 
     return (
-      <form onSubmit={this.onSubmit}>
-        <input
-          name="username"
-          value={username}
-          onChange={this.onChange}
-          type="text"
-          placeholder="Full Name"
-        />
-        <input
-          name="email"
-          value={email}
-          onChange={this.onChange}
-          type="text"
-          placeholder="Email Address"
-        />
-        <input
-          name="passwordOne"
-          value={passwordOne}
-          onChange={this.onChange}
-          type="password"
-          placeholder="Password"
-        />
-        <input
-          name="passwordTwo"
-          value={passwordTwo}
-          onChange={this.onChange}
-          type="password"
-          placeholder="Confirm Password"
-        />
-        <button disabled={isInvalid} type="submit">
-          Sign Up
-        </button>
-
-        {error && <p>{error.message}</p>}
+      <main className={classes.main}>
+      <Paper className={classes.paper}>
+        <Avatar className={classes.avatar}>
+          <LockIcon />
+        </Avatar>
+        <Typography component="h1" variant="h5">
+          Sign up
+        </Typography>
+        <form onSubmit={this.onSubmit}>
+          <FormControl margin="normal" required fullWidth>
+            <InputLabel htmlFor="username">User Name</InputLabel>
+            <Input id="username" name="username" autoComplete="username" autoFocus onChange={this.onChange}/>
+          </FormControl>
+          <FormControl margin="normal" required fullWidth>
+            <InputLabel htmlFor="email">Email Address</InputLabel>
+            <Input id="email" name="email" type="email" autoComplete="email" onChange={this.onChange}/>
+          </FormControl>
+          <FormControl margin="normal" required fullWidth>
+            <InputLabel htmlFor="passwordOne">Password</InputLabel>
+            <Input name="passwordOne" type="password" id="passwordOne" onChange={this.onChange}/>
+          </FormControl>
+          <FormControl margin="normal" required fullWidth>
+            <InputLabel htmlFor="passwordTwo">Confirm Password</InputLabel>
+            <Input name="passwordTwo" type="password" id="passwordTwo" onChange={this.onChange}/>
+          </FormControl>
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            color="primary"
+            className={classes.submit}
+            disabled={isInvalid}
+          >
+            Sign up
+          </Button>
       </form>
+        {error && <p>{error.message}</p>}
+      </Paper>
+      </main>
     );
   }
 }
@@ -119,8 +160,18 @@ const SignUpLink = () => (
   </p>
 );
 
-const SignUpForm = withRouter(withFirebase(SignUpFormBase));
+SignUpFormBase.propTypes = {
+  classes: PropTypes.object.isRequired,
+};
 
-export default SignUpPage;
+const SignUpForm = compose(
+  withStyles(styles),
+  withRouter,
+  withFirebase,
+)(SignUpFormBase);
+
+
 
 export { SignUpForm, SignUpLink };
+export default (SignUpPage);
+
