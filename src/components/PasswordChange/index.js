@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-
+import PropTypes from 'prop-types';
 import { withFirebase } from '../Firebase';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
@@ -23,10 +23,10 @@ class PasswordChangeForm extends Component {
     this.props.firebase
       .doPasswordUpdate(passwordOne)
       .then(() => {
-        this.setState({ ...INITIAL_STATE });
+        this.props.onSuccess();
       })
       .catch(error => {
-        this.setState({ error });
+        this.props.onError(error.message);
       });
 
     event.preventDefault();
@@ -44,28 +44,22 @@ class PasswordChangeForm extends Component {
 
     return (
       <form onSubmit={this.onSubmit}>
-        <TextField
-          name="passwordOne"
-          value={passwordOne}
-          onChange={this.onChange}
-          type="password"
-          label="New Password"
+        <TextField name="passwordOne" label="New Password" type="password" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
+          value={passwordOne} onChange={this.onChange}
         />
-        <TextField
-          name="passwordTwo"
-          value={passwordTwo}
-          onChange={this.onChange}
-          type="password"
-          label="Confirm New Password"
+        <TextField name="passwordTwo" label="Confirm New Password" type="password" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
+          value={passwordTwo} onChange={this.onChange}
         />
-        <Button variant="contained" color="primary" disabled={isInvalid} type="submit">
-          Reset My Password
+        <Button variant="contained" fullWidth color="primary" disabled={isInvalid} type="submit">
+          Update
         </Button>
-
         {error && <p>{error.message}</p>}
       </form>
     );
   }
 }
-
+PasswordChangeForm.propTypes = {
+  onSuccess: PropTypes.func.isRequired,
+  onError: PropTypes.func.isRequired
+};
 export default withFirebase(PasswordChangeForm);

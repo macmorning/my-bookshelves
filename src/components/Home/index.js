@@ -398,7 +398,7 @@ class HomePage extends Component {
               Yes
             </Button>
             <Button onClick={this.closeConfirm} color="primary" autoFocus>
-              Nooooo!
+              Nooo!
             </Button>
           </DialogActions>
         </Dialog>
