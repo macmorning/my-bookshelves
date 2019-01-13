@@ -1,8 +1,6 @@
 const functions = require('firebase-functions'),
-      https = require('https'),
       parseString = require('xml2js').parseString,
-      admin = require('firebase-admin');
-      // request =require('request-promise');
+      rp =require('request-promise');
 
 const lookupConfig = {
   // set using firebase functions:config:set libthing.key=...
@@ -16,20 +14,15 @@ exports.fetchBookInformations = functions.database.ref('/bd/{user}/{ref}/needLoo
     if (!snapshot.after.exists() || snapshot.after.val() !== 1) {
         return null;
     }
-
+    console.info("lookup for > " + isbn);
     let url = lookupConfig.libthing_baseurl.replace("@@apikey@@",lookupConfig.libthing_api_key).replace("@@isbn@@",isbn);
 
-
-    https.get(url, res => {
-        res.setEncoding("utf8");
-        let response = "";
-        res.on("data", data => {
-            response += data;
-        });
-        res.on("end", () => {
-           response = parseString(response, function(err, result) {
+    return rp({ url: url }).then(function(resp) {
+            parseString(resp, function(err, result){
+                if (err) { 
+                    console.error(new Error("parseString error > " + err));
+                }
                 var dataRef = snapshot.after.ref.parent;
-
                 if (result.response.ltml !== undefined && result.response.ltml[0] !== undefined && result.response.ltml[0].item[0] !== undefined) {
                     let book = result.response.ltml[0].item[0];
                     return dataRef.update({
@@ -42,14 +35,15 @@ exports.fetchBookInformations = functions.database.ref('/bd/{user}/{ref}/needLoo
                         needLookup: 0
                     });
                 } else {
-                    console.log(" ... not found!");
+                    console.info("lookup err > not found!");
                     return dataRef.update({
                         title: "not found!",
                         needLookup: 0
                     });
                 }
-           });
-        });
+            });
+    }).catch(function(error) {
+        console.error(new Error("request err > " + error.message));
     });
-  }
-);
+});
+
