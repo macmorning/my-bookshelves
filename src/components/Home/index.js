@@ -17,9 +17,9 @@ import SnackbarContent from '@material-ui/core/SnackbarContent';
 import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
 import green from '@material-ui/core/colors/green';
+import red from '@material-ui/core/colors/red';
 
 import Dialog from '@material-ui/core/Dialog';
-import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
@@ -86,6 +86,7 @@ class HomePage extends Component {
       confirm: false,
       currentBook: {},
       showSuccess: false,
+      showError: false,
       scanning: false,
       isbn: ""
     };
@@ -97,7 +98,6 @@ class HomePage extends Component {
         name: "uid",
         options: { 
           filter: false,
-          customBodyRender: (value,tableMeta) => <Button data-index={tableMeta.rowIndex} onClick={this.onCellClick}>{value}</Button>
         }
       }, {
         name:"createDate",
@@ -140,6 +140,12 @@ class HomePage extends Component {
     ];
 
     this.table_options = {
+      onRowClick: (rowData, rowMeta) => { 
+        this.setState({
+          drawerOpen: true,
+          currentBook: this.state.books[rowMeta.dataIndex]
+        });
+      },
       rowsPerPage: (displayExtraColumns ? 50 : 20),
       rowsPerPageOptions: [20,50,100],
       selectableRows: true,
@@ -164,14 +170,6 @@ class HomePage extends Component {
     this.props.firebase.books().off();
   }
 
-  onCellClick = (event) => { 
-      let index = event.target.getAttribute("data-index");
-      this.setState({
-        drawerOpen: true,
-        currentBook: this.state.books[index]
-      });
-  }
-
   toggleDrawer = (open) => () => {
     this.setState({
       drawerOpen: (open ? open : false)
@@ -188,32 +186,6 @@ class HomePage extends Component {
       scanning: false
     });
   }
-
-  // handle book removal
-  onBookRemove = () => {
-    this.setState({
-      confirm: true
-    })
-  }
-  closeConfirm = () => {
-    this.setState({
-      confirm: false
-    })
-  }
-  onBookRemoveConfirmed = () => {
-    this.closeConfirm();
-    this.props.firebase.doRemoveBook(this.state.user,this.state.currentBook.uid)
-    .then(() => {
-      this.setState({ 
-        showSuccess: true,
-        drawerOpen: false
-       });
-    })
-    .catch(error => {
-      this.setState({ error });
-    });
-  }
-
 
   loadBooks() {
     let compare = (a,b) => {
@@ -262,16 +234,7 @@ class HomePage extends Component {
       this.setState( { isbn: code });
     }
   }
-  onBookSubmit = (book) => {
-    this.setState({
-      drawerOpen: false
-    });
-    this.props.firebase.doUpdateBook(this.state.user,book.uid,book).then(() => {
-      this.setState({ showSuccess: true });
-    }).catch(error => {
-      this.setState({ error });
-    });
-  }
+
   onBookAdd = event => {
     this.setState({
       scanning: false
@@ -292,11 +255,24 @@ class HomePage extends Component {
     let targetValue = event.target.value;
     this.setState({ isbn: targetValue});
   }
+
+  onSaveSuccess = () => {
+    this.setState({ 
+      showSuccess: true,
+      drawerOpen: false
+    });
+  }
+  onSaveError = (error) => {
+    this.setState({ 
+      showError: true,
+      error: error
+     });
+  }
+
   onSnackClose = (event, reason) => {
     if (reason === 'clickaway') {
       return;
     }
-
     this.setState({ showSuccess: false });
   };
   render() {
@@ -316,7 +292,7 @@ class HomePage extends Component {
             <LinearProgress />
           )}
         <Drawer classes={{paper: classes.paper}} anchor="bottom" open={this.state.drawerOpen} onClose={this.toggleDrawer(false)}>
-          <BookEditorForm currentBook={currentBook} onBookSubmit={this.onBookSubmit} onBookRemove={this.onBookRemove} onClose={this.toggleDrawer(false)}/>
+          <BookEditorForm currentBook={currentBook} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer(false)}/>
         </Drawer>
         <Snackbar
           anchorOrigin={{
@@ -335,31 +311,27 @@ class HomePage extends Component {
               message={<span id="message-id">Changes saved</span>}
               />
         </Snackbar>
+
+        <Snackbar
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'left',
+            }}
+            open={this.state.showError}
+            autoHideDuration={5000}
+            onClose={this.onSnackClose}
+            ContentProps={{
+              'aria-describedby': 'error-message-id',
+            }} >
+          <SnackbarContent
+                message={<span id="error-message-id">{this.state.error}</span>}
+                style = {{ backgroundColor: red[600] }}
+                />
+        </Snackbar>
+
         <Fab color="primary" aria-label="Add" className={classes.fab} onClick={this.startScan}>
           <AddIcon />
         </Fab>
-
-        <Dialog
-          open={this.state.confirm}
-          onClose={this.closeConfirm}
-          maxWidth='sm'
-          fullWidth
-          aria-labelledby="confirm-book-remove-dialog-title"
-          aria-describedby="confirm-book-remove-dialog-description"
-        >
-          <DialogTitle id="confirm-book-remove-dialog-title">{this.state.currentBook.title}</DialogTitle>
-          <DialogContentText style={{ margin: '10px' }} id="confirm-book-remove-dialog-description">
-              Are you sure you want to remove this book from your shelves?
-          </DialogContentText>
-          <DialogActions>
-            <Button onClick={this.removeBookConfirmed} color="secondary">
-              Yes
-            </Button>
-            <Button onClick={this.closeConfirm} color="primary" autoFocus>
-              Nooo!
-            </Button>
-          </DialogActions>
-        </Dialog>
 
         <Dialog
           open={this.state.scanning}

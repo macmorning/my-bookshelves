@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
+import { withFirebase } from '../Firebase';
 import MediaQuery from 'react-responsive';
 import PropTypes from 'prop-types';
 import { compose } from 'recompose';
@@ -8,7 +9,11 @@ import TextField from '@material-ui/core/TextField';
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 import { Column, Row } from 'simple-flexbox';
+import Dialog from '@material-ui/core/Dialog';
+import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogTitle from '@material-ui/core/DialogTitle';
 
 
 const styles = theme => ({
@@ -34,13 +39,50 @@ const styles = theme => ({
 class BookEditorFormBase extends Component {
   constructor(props) {
     super(props);
-    this.state = { currentBook: props.currentBook };
-    this._onBookSubmit = this._onBookSubmit.bind(this);
+    this.state = { 
+      currentBook: props.currentBook,
+      confirm: false
+    };
+    this.onBookSubmit = this.onBookSubmit.bind(this);
+    let auth = this.props.firebase.auth;
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        this.setState({ user: user.uid });
+      } else {
+        // No user is signed in.
+      }
+    });    
  }
 
-  _onBookSubmit(event) {
+  onBookSubmit(event) {
     event.preventDefault();
-    this.props.onBookSubmit(this.state.currentBook);
+    this.props.firebase.doUpdateBook(this.state.user,this.state.currentBook.uid,this.state.currentBook).then(() => {
+      this.props.onSaveSuccess();
+    }).catch(error => {
+      this.props.onSaveError({ error });
+    });
+  }
+
+  // handle book removal
+  onBookRemove = () => {
+    this.setState({
+      confirm: true
+    })
+  }
+  closeConfirm = () => {
+    this.setState({
+      confirm: false
+    })
+  }
+  onBookRemoveConfirmed = () => {
+    this.closeConfirm();
+    this.props.firebase.doRemoveBook(this.state.user,this.state.currentBook.uid)
+    .then(() => {
+      this.props.onSaveSuccess();
+    })
+    .catch(error => {
+      this.props.onSaveError({ error });
+    });
   }
 
   onBookChange = event => {
@@ -60,6 +102,28 @@ class BookEditorFormBase extends Component {
 
     return (
       <main className={classes.main}>
+      <Dialog
+        open={this.state.confirm}
+        onClose={this.closeConfirm}
+        maxWidth='sm'
+        fullWidth
+        aria-labelledby="confirm-book-remove-dialog-title"
+        aria-describedby="confirm-book-remove-dialog-description"
+      >
+        <DialogTitle id="confirm-book-remove-dialog-title">{this.state.currentBook.title}</DialogTitle>
+        <DialogContentText style={{ margin: '10px' }} id="confirm-book-remove-dialog-description">
+            Are you sure you want to remove this book from your shelves?
+        </DialogContentText>
+        <DialogActions>
+          <Button onClick={this.onBookRemoveConfirmed} color="secondary">
+            Yes
+          </Button>
+          <Button onClick={this.closeConfirm} color="primary" autoFocus>
+            Nooo!
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Paper className={classes.root} elevation={2}>
       <Column flexGrow={1}>
         <Row horizontal='center'>
@@ -76,7 +140,7 @@ class BookEditorFormBase extends Component {
             </Column>
           </MediaQuery>
           <Column flexGrow={1} alignItems='start'>
-          <form className={classes.form} onSubmit={this._onBookSubmit}>
+          <form className={classes.form} onSubmit={this.onBookSubmit}>
             <Row style={{ maxHeight:"350px", overflow:"auto" }}>
             <Column flexGrow={1}>
             <Row>
@@ -129,7 +193,7 @@ class BookEditorFormBase extends Component {
                   <Button onClick={this.props.onClose} color="primary">
                       Close
                   </Button>
-                  <Button onClick={this.props.onBookRemove} color="secondary">
+                  <Button onClick={this.onBookRemove} color="secondary">
                       Delete
                   </Button>
                 </DialogActions>
@@ -145,12 +209,13 @@ class BookEditorFormBase extends Component {
 }
 
 const BookEditorForm = compose(
+  withFirebase,
   withStyles(styles)
 )(BookEditorFormBase);
 
 BookEditorForm.propTypes = {
-  onBookSubmit: PropTypes.func.isRequired,
-  onBookRemove: PropTypes.func.isRequired,
+  onSaveSuccess: PropTypes.func.isRequired,
+  onSaveError: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
   currentBook: PropTypes.object.isRequired
 };
