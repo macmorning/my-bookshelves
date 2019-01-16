@@ -4,19 +4,14 @@ import { withFirebase } from '../Firebase';
 import { withStyles } from '@material-ui/core/styles';
 import withWidth, { isWidthUp } from '@material-ui/core/withWidth';
 import Scanner from '../Scanner';
+import BookEditorForm from '../BookEditor';
 import PropTypes from 'prop-types';
 import LinearProgress from '@material-ui/core/LinearProgress';
-import Fade from '@material-ui/core/Fade';
 import Drawer from '@material-ui/core/Drawer';
-import Paper from '@material-ui/core/Paper';
-import Typography from '@material-ui/core/Typography';
-import { Column, Row } from 'simple-flexbox';
 import FormControl from '@material-ui/core/FormControl';
 import Input from '@material-ui/core/Input';
 import InputLabel from '@material-ui/core/InputLabel';
-import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
-import MediaQuery from 'react-responsive';
 import Snackbar from '@material-ui/core/Snackbar';
 import SnackbarContent from '@material-ui/core/SnackbarContent';
 import Fab from '@material-ui/core/Fab';
@@ -28,7 +23,6 @@ import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
-
 import MUIDataTable from "mui-datatables";
 
 const styles = theme => ({
@@ -62,7 +56,8 @@ const styles = theme => ({
     height: '475px',
   },
   form: {
-    margin: '10px'
+    margin: '10px',
+    width: '100%'
   },
   message: {
     display: 'flex',
@@ -97,22 +92,63 @@ class HomePage extends Component {
 
     let displayExtraColumns = (isWidthUp('sm', this.props.width) ? true : false);
     let displayExtraOptions = (isWidthUp('md', this.props.width) ? true : false);
-    this.table_columns = ["createDate", {name: "uid",options: { display: displayExtraColumns }}, "series", "volume", "title", {name: "author",options: { display: displayExtraColumns }}, {name: "published",options: { display: displayExtraColumns }}, {name: "publisher",options: { display: displayExtraColumns }}];
+    this.table_columns = [
+    {
+        name: "uid",
+        options: { 
+          filter: false,
+          customBodyRender: (value,tableMeta) => <Button data-index={tableMeta.rowIndex} onClick={this.onCellClick}>{value}</Button>
+        }
+      }, {
+        name:"createDate",
+        options: {
+          display: displayExtraColumns,
+          filter: false,
+        }
+      }, {
+        name: "series",
+        options: { 
+        }
+      }, {
+        name: "volume",
+        options: { 
+          filter: false,
+        }
+      }, {
+        name: "title",
+        options: { 
+          filter: false,
+        }
+      }, 
+      {
+        name: "author",
+        options: { 
+          display: displayExtraColumns 
+        }
+      }, {
+        name: "published",
+        options: { 
+          display: displayExtraColumns,
+          filter: false,
+        }
+      }, {
+        name: "publisher",
+        options: {
+          display: displayExtraColumns 
+        }
+      }
+    ];
+
     this.table_options = {
-      onRowClick: (rowData, rowMeta) => { 
-        this.setState({
-          drawerOpen: true,
-          currentBook: this.state.books[rowMeta.dataIndex]
-        });
-      },
       rowsPerPage: (displayExtraColumns ? 50 : 20),
       rowsPerPageOptions: [20,50,100],
-      selectableRows: false,
+      selectableRows: true,
       fixedHeader: true,
       filterType: "multiselect",
-      print: displayExtraOptions,
+      print: false,
       download: displayExtraOptions,
-      filter: displayExtraOptions
+      filter: displayExtraOptions,
+      customToolbarSelect: function(selectedRows) { return (<Button data={selectedRows.data}>Modify</Button>);}
     }
 
     let auth = this.props.firebase.auth;
@@ -124,10 +160,21 @@ class HomePage extends Component {
     });
   }
 
-  toggleDrawer = (open, book) => () => {
-     this.setState({
-      drawerOpen: open,
-      currentBook: (book ? book : {})
+  componentWillUnmount() {
+    this.props.firebase.books().off();
+  }
+
+  onCellClick = (event) => { 
+      let index = event.target.getAttribute("data-index");
+      this.setState({
+        drawerOpen: true,
+        currentBook: this.state.books[index]
+      });
+  }
+
+  toggleDrawer = (open) => () => {
+    this.setState({
+      drawerOpen: (open ? open : false)
     });
   }
 
@@ -142,19 +189,18 @@ class HomePage extends Component {
     });
   }
 
-  removeBook = () => {
+  // handle book removal
+  onBookRemove = () => {
     this.setState({
       confirm: true
     })
   }
-
   closeConfirm = () => {
     this.setState({
       confirm: false
     })
   }
-
-  removeBookConfirmed = () => {
+  onBookRemoveConfirmed = () => {
     this.closeConfirm();
     this.props.firebase.doRemoveBook(this.state.user,this.state.currentBook.uid)
     .then(() => {
@@ -167,6 +213,7 @@ class HomePage extends Component {
       this.setState({ error });
     });
   }
+
 
   loadBooks() {
     let compare = (a,b) => {
@@ -209,27 +256,19 @@ class HomePage extends Component {
     return booksData;
   }
 
-  componentWillUnmount() {
-    this.props.firebase.books().off();
-  }
-
-
   onDetected = event => {
     let code = event.codeResult.code;
     if (this.state.isbn !== code) {
       this.setState( { isbn: code });
     }
   }
-  onBookSubmit = event => {
-    event.preventDefault();
-    this.props.firebase.doUpdateBook(this.state.user,this.state.currentBook.uid,this.state.currentBook)
-    .then(() => {
-      this.setState({ 
-        showSuccess: true,
-        drawerOpen: false
-       });
-    })
-    .catch(error => {
+  onBookSubmit = (book) => {
+    this.setState({
+      drawerOpen: false
+    });
+    this.props.firebase.doUpdateBook(this.state.user,book.uid,book).then(() => {
+      this.setState({ showSuccess: true });
+    }).catch(error => {
       this.setState({ error });
     });
   }
@@ -249,17 +288,6 @@ class HomePage extends Component {
     });
   }
 
-  onBookChange = event => {
-    let targetName = event.target.name;
-    let targetValue = event.target.value;
-    // Make a copy of the object stored in state before replacing it
-    this.setState(prevState => ({
-      currentBook: {
-          ...prevState.currentBook,
-          [targetName]: targetValue
-      }
-    }));
-  };
   onISBNChange = event => {
     let targetValue = event.target.value;
     this.setState({ isbn: targetValue});
@@ -275,90 +303,20 @@ class HomePage extends Component {
     const { loading, currentBook } = this.state; 
     const { classes } = this.props;
 
-    const sideList = (
-      <main className={classes.main}>
-      <Paper className={classes.root} elevation={2}>
-      <Column flexGrow={1}>
-        <Row horizontal='center'>
-          <a target="_new" href={currentBook.detailsURL}>
-            <Typography variant="h5" component="h2">    
-              {currentBook.title}
-            </Typography>
-          </a>
-        </Row>  
-        <Row horizontal='start' vertical='start'>
-          <MediaQuery query="(min-device-width: 1000px)">
-            <Column className={classes.imgCol} flexGrow={1} horizontal='center'>
-              <img src={currentBook.imageURL} style={{ height:"400px" }} alt=""/>
-            </Column>
-          </MediaQuery>
-          <Column flexGrow={1} alignItems='start'>
-            <Row style={{ maxHeight:"350px", overflow:"auto" }}>
-              <form className={classes.form} onSubmit={this.onBookSubmit}>
-                <TextField id="title"
-                  label="Title" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
-                  value={currentBook.title} onChange={this.onBookChange} autoFocus />
-                <TextField id="author"
-                  label="Author" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
-                  value={currentBook.author} onChange={this.onBookChange} />
-                <TextField id="series"
-                  label="Series" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
-                  value={currentBook.series} onChange={this.onBookChange} />
-                <TextField id="volume"
-                  label="Volume" type="number" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
-                  value={currentBook.volume} onChange={this.onBookChange} />
-                <TextField id="published"
-                  label="Published" type="date" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
-                  value={currentBook.published} onChange={this.onBookChange} />
-                <TextField id="publisher"
-                  label="Publisher" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
-                  value={currentBook.publisher} onChange={this.onBookChange} />
-                <TextField id="imageURL"
-                  label="image URL" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
-                  value={currentBook.imageURL} onChange={this.onBookChange} />
-                <TextField id="detailsURL"
-                  label="Details URL" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
-                  value={currentBook.detailsURL} onChange={this.onBookChange} />
-              </form>
-            </Row>
-            <Row>
-                <DialogActions>
-                  <Button type="submit" color="primary">
-                      Save
-                  </Button>
-                  <Button onClick={this.toggleDrawer(false)} color="primary">
-                      Close
-                  </Button>
-                  <Button onClick={this.removeBook} color="secondary">
-                      Delete
-                  </Button>
-                </DialogActions>
-            </Row>
-          </Column>
-        </Row>
-      </Column>
-      </Paper>
-      </main>
-    );
-    
     return (
       <div>
-        <Fade
-          in={loading}
-          style={{
-            transitionDelay: loading ? '600ms' : '0ms',
-          }}
-          unmountOnExit
-        >
-          <LinearProgress />
-        </Fade>
-        <MUIDataTable
-          data={ this.getBooksData() }
-          columns={this.table_columns}
-          options={this.table_options}
-        />
+
+          { !loading ? (
+                <MUIDataTable
+                  data={ this.getBooksData() }
+                  columns={this.table_columns}
+                  options={this.table_options}
+                />
+          ):(
+            <LinearProgress />
+          )}
         <Drawer classes={{paper: classes.paper}} anchor="bottom" open={this.state.drawerOpen} onClose={this.toggleDrawer(false)}>
-            {sideList}
+          <BookEditorForm currentBook={currentBook} onBookSubmit={this.onBookSubmit} onBookRemove={this.onBookRemove} onClose={this.toggleDrawer(false)}/>
         </Drawer>
         <Snackbar
           anchorOrigin={{
@@ -384,14 +342,14 @@ class HomePage extends Component {
         <Dialog
           open={this.state.confirm}
           onClose={this.closeConfirm}
+          maxWidth='sm'
+          fullWidth
           aria-labelledby="confirm-book-remove-dialog-title"
           aria-describedby="confirm-book-remove-dialog-description"
         >
-          <DialogTitle id="confirm-book-remove-dialog-title">{"Confirm book removal"}</DialogTitle>
+          <DialogTitle id="confirm-book-remove-dialog-title">{this.state.currentBook.title}</DialogTitle>
           <DialogContentText style={{ margin: '10px' }} id="confirm-book-remove-dialog-description">
-              Are you sure you want to remove <br/>
-              {this.state.currentBook.title} <br/>
-              from your shelves?
+              Are you sure you want to remove this book from your shelves?
           </DialogContentText>
           <DialogActions>
             <Button onClick={this.removeBookConfirmed} color="secondary">
