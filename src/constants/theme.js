@@ -1,22 +1,31 @@
 import { createMuiTheme } from '@material-ui/core/styles';
-import indigo from '@material-ui/core/colors/indigo';
-import red from '@material-ui/core/colors/red';
+import { red, blueGrey } from '@material-ui/core/colors';
 
-// All the following keys are optional.
-// We try our best to provide a great default value.
-const theme = createMuiTheme({
-  palette: {
-    primary: indigo,
-    secondary: red,
-    error: red,
-    // Used by `getContrastText()` to maximize the contrast between the background and
-    // the text.
-    contrastThreshold: 3,
-    // Used to shift a color's luminance by approximately
-    // two indexes within its tonal palette.
-    // E.g., shift from Red 500 to Red 300 or Red 700.
-    tonalOffset: 0.2,
-  },
+
+function getTheme(theme) {
+  return createMuiTheme({
+    palette: {
+      primary: blueGrey,
+      secondary: red,
+      error: red,
+      type: theme.paletteType,
+      background: {
+        default: theme.paletteType === 'light' ? '#000' : '#fff',
+      },
+      contrastThreshold: 3,
+      tonalOffset: 0.2,
+    },
+    props: {
+      MuiButtonBase: {
+        disableRipple: true,
+      },
+    },
+  });
+}
+
+const theme = getTheme({
+  paletteType: 'light',
 });
+
 
 export default theme;

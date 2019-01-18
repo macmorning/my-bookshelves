@@ -28,7 +28,7 @@ class Firebase {
   }
   // *** Auth API ***
 
-    doCreateUserWithEmailAndPassword = (email, password) =>
+    doCreateUserWithEmailAndPassword = (email, password) => 
         this.auth.createUserWithEmailAndPassword(email, password);
 
     doSignInWithEmailAndPassword = (email, password) =>
@@ -55,7 +55,7 @@ class Firebase {
   // *** Book API ***
     books = uid => this.db.ref(`bd/${uid}`).limitToLast(this.maxBooks);
     doUpdateBook = (uid, bookid, book) => (book.computedOrderField = (book.series ? book.series + (book.volume ? "_" + book.volume.padStart(4, '0') : "") : "") + "_" + book.title) && (this.db.ref(`bd/${uid}/${bookid}`).update(book));
-    doAddBook = (uid, bookid) => (this.db.ref(`bd/${uid}/${bookid}`).set({ needLookup: 1, createDate: this.currDateFormatted}));
+    doAddBook = (uid, bookid) => (this.db.ref(`bd/${uid}/${bookid}`).set({ needLookup: 1, dateAdded: this.currDateFormatted}));
     doRemoveBook = (uid, bookid) => (this.db.ref(`bd/${uid}/${bookid}`).remove());
 }
 

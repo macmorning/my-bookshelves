@@ -4,10 +4,9 @@ import { withFirebase } from '../Firebase';
 import { withStyles } from '@material-ui/core/styles';
 import withWidth, { isWidthUp } from '@material-ui/core/withWidth';
 import Scanner from '../Scanner';
-import BookEditorForm from '../BookEditor';
+import BookEditorForm, {BookMultiEditorForm} from '../BookEditor';
 import PropTypes from 'prop-types';
 import LinearProgress from '@material-ui/core/LinearProgress';
-import Drawer from '@material-ui/core/Drawer';
 import FormControl from '@material-ui/core/FormControl';
 import Input from '@material-ui/core/Input';
 import InputLabel from '@material-ui/core/InputLabel';
@@ -16,9 +15,9 @@ import Snackbar from '@material-ui/core/Snackbar';
 import SnackbarContent from '@material-ui/core/SnackbarContent';
 import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
+import InfoIcon from '@material-ui/icons/Info';
 import green from '@material-ui/core/colors/green';
 import red from '@material-ui/core/colors/red';
-
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
@@ -38,7 +37,7 @@ const styles = theme => ({
   },
   icon: {
     color: 'rgba(255, 255, 255, 0.54)',
-  },
+  },  
   progress: {
     margin: theme.spacing.unit * 2,
   },
@@ -77,13 +76,14 @@ const styles = theme => ({
 class HomePage extends Component {
   constructor(props) {
     super(props);
+    this.booksObj = {};
+    this.selectedBooks = [];
     this.state = {
-      loading: false,
+      loading: true,
       books: [],
       user: "",
-      tooltipOpen: false,
       drawerOpen: false,
-      confirm: false,
+      drawerMultiOpen: false,
       currentBook: {},
       showSuccess: false,
       showError: false,
@@ -98,9 +98,10 @@ class HomePage extends Component {
         name: "uid",
         options: { 
           filter: false,
+          customBodyRender: (uid) => <Button bookid={uid}>{uid}</Button>
         }
       }, {
-        name:"createDate",
+        name:"dateAdded",
         options: {
           display: displayExtraColumns,
           filter: false,
@@ -108,10 +109,12 @@ class HomePage extends Component {
       }, {
         name: "series",
         options: { 
+          display: displayExtraColumns,
         }
       }, {
         name: "volume",
         options: { 
+          display: displayExtraColumns,
           filter: false,
         }
       }, {
@@ -134,17 +137,43 @@ class HomePage extends Component {
       }, {
         name: "publisher",
         options: {
-          display: displayExtraColumns 
+          display: displayExtraColumns,
+        }
+      }, {
+        name: "detailsURL",
+        options: {
+          display: displayExtraColumns,
+          customBodyRender: (url) => {
+              if (url!==undefined && url!=="") { 
+               return ( <a href={url} target="_new"><InfoIcon color="primary"/></a>); 
+              } else {
+                return ("");
+              }
+            }
+        }
+      }, {
+        name: "computedOrderField",
+        options: {
+          display: false,
+          sortDirection: 'asc'
         }
       }
     ];
 
     this.table_options = {
-      onRowClick: (rowData, rowMeta) => { 
-        this.setState({
-          drawerOpen: true,
-          currentBook: this.state.books[rowMeta.dataIndex]
-        });
+      onCellClick: (obj) => { if(obj.props && obj.props.bookid) { this.setState({ 
+            currentBook: {
+              ...this.booksObject[obj.props.bookid],
+              uid: obj.props.bookid
+            },
+            drawerOpen: true
+          });
+        } 
+      },
+      textLabels: {
+        body: {
+          noMatch: "No book found!",
+        },
       },
       rowsPerPage: (displayExtraColumns ? 50 : 20),
       rowsPerPageOptions: [20,50,100],
@@ -154,7 +183,10 @@ class HomePage extends Component {
       print: false,
       download: displayExtraOptions,
       filter: displayExtraOptions,
-      customToolbarSelect: function(selectedRows) { return (<Button data={selectedRows.data}>Modify</Button>);}
+      customToolbarSelect: (selectedRows) => {
+          this.selectedBooks = selectedRows.data.map(rowMeta => this.state.books[rowMeta.dataIndex]);
+          return (<Button onClick={this.onModifySelected}>Modify</Button>);
+      }
     }
 
     let auth = this.props.firebase.auth;
@@ -170,9 +202,21 @@ class HomePage extends Component {
     this.props.firebase.books().off();
   }
 
-  toggleDrawer = (open) => () => {
+  toggleDrawer = (open) => {
     this.setState({
-      drawerOpen: (open ? open : false)
+      drawerOpen: (open===true ? true : false)
+    });
+  }
+  toggleMultiDrawer = (open) => {
+    this.setState({
+      drawerMultiOpen: (open===true ? true : false)
+    });
+  }
+
+  onModifySelected = (event) => {
+    this.setState({
+      drawerOpen: false,
+      drawerMultiOpen: true
     });
   }
 
@@ -188,22 +232,17 @@ class HomePage extends Component {
   }
 
   loadBooks() {
-    let compare = (a,b) => {
-      if (a.computedOrderField < b.computedOrderField)
-        return -1;
-      if (a.computedOrderField > b.computedOrderField)
-        return 1;
-      return 0;
-    }
     this.setState({ loading: true });
 
     this.props.firebase.books(this.state.user).orderByChild("computedOrderField").on('value', snapshot => {
-      const booksObject = snapshot.val();
-      const booksList = Object.keys(booksObject).map(key => ({
-        ...booksObject[key],
-        uid: key
-      }));
-      booksList.sort(compare);
+      this.booksObject = snapshot.val();
+      let booksList = [];
+      if(this.booksObject) {
+        booksList = Object.keys(this.booksObject).map(key => ({
+          ...this.booksObject[key],
+          uid: key
+        }));
+      }
       this.setState({
         books: booksList,
         loading: false,
@@ -259,7 +298,8 @@ class HomePage extends Component {
   onSaveSuccess = () => {
     this.setState({ 
       showSuccess: true,
-      drawerOpen: false
+      drawerOpen: false,
+      drawerMultiOpen: false
     });
   }
   onSaveError = (error) => {
@@ -291,9 +331,23 @@ class HomePage extends Component {
           ):(
             <LinearProgress />
           )}
-        <Drawer classes={{paper: classes.paper}} anchor="bottom" open={this.state.drawerOpen} onClose={this.toggleDrawer(false)}>
-          <BookEditorForm currentBook={currentBook} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer(false)}/>
-        </Drawer>
+         <Dialog
+          open={this.state.drawerOpen}
+          onClose={this.toggleDrawer}
+          maxWidth="md"
+          aria-labelledby="book-dialog-title"
+        >
+          <DialogTitle id="book-dialog-title">{currentBook.title}</DialogTitle>
+           <BookEditorForm currentBook={currentBook} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
+        </Dialog>
+
+        <Dialog
+          open={this.state.drawerMultiOpen}
+          onClose={this.toggleMultiDrawer}
+          maxWidth="md"
+         >
+          <BookMultiEditorForm bookArray={this.selectedBooks} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleMultiDrawer}/>
+        </Dialog>
         <Snackbar
           anchorOrigin={{
             vertical: 'bottom',
