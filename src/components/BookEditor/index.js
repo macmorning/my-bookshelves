@@ -119,11 +119,11 @@ export {BookMultiEditorForm};
 
 
 
-class BookEditorFormBase extends Component {
+class BookEditorForm extends Component {
   constructor(props) {
     super(props);
     this.state = { 
-      currentBook: props.currentBook,
+      currentBook: {},
       confirm: false
     };
     this.onBookSubmit = this.onBookSubmit.bind(this);
@@ -131,12 +131,20 @@ class BookEditorFormBase extends Component {
     auth.onAuthStateChanged((user) => {
       if (user) {
         this.setState({ user: user.uid });
+        this.props.firebase.book(this.state.user,this.props.uid).on('value', (snapshot) => {
+          let book = snapshot.val();
+          this.setState(prevState => ({
+            currentBook: {
+                ...book,
+                uid: this.props.uid
+            }
+          }));
+        });
       } else {
         // No user is signed in.
       }
     });    
  }
-
   onBookSubmit(event) {
     event.preventDefault();
     this.props.firebase.doUpdateBook(this.state.user,this.state.currentBook.uid,this.state.currentBook).then(() => {
@@ -196,7 +204,7 @@ class BookEditorFormBase extends Component {
         aria-labelledby="confirm-book-remove-dialog-title"
         aria-describedby="confirm-book-remove-dialog-description"
       >
-        <DialogTitle id="confirm-book-remove-dialog-title">{this.state.currentBook.title}</DialogTitle>
+        <DialogTitle id="confirm-book-remove-dialog-title">{this.state.currentBook.title ? currentBook.title : "Untitled book"}</DialogTitle>
         <DialogContentText style={{ margin: '10px' }} id="confirm-book-remove-dialog-description">
             Are you sure you want to remove this book from your shelves?
         </DialogContentText>
@@ -212,7 +220,7 @@ class BookEditorFormBase extends Component {
 
       <Column flexGrow={1}>
         <Row horizontal='start' vertical='start'>
-          <MediaQuery query="(min-device-width: 1000px)">
+          <MediaQuery query="(min-width: 1000px)">
             <Column className={classes.imgCol} flexGrow={1} horizontal='center'>
               {cover}
             </Column>
@@ -268,19 +276,12 @@ class BookEditorFormBase extends Component {
 }
 
 
-
-const BookEditorForm = compose(
-  withFirebase,
-  withStyles(styles)
-)(BookEditorFormBase);
-
-
-
 BookEditorForm.propTypes = {
+  showCover: PropTypes.bool,
   onSaveSuccess: PropTypes.func.isRequired,
   onSaveError: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
-  currentBook: PropTypes.object.isRequired
+  uid: PropTypes.string.isRequired
 };
 
-export default BookEditorForm;
+export default (withStyles(styles)(withFirebase(BookEditorForm)));

@@ -7,6 +7,7 @@ import Scanner from '../Scanner';
 import BookEditorForm, {BookMultiEditorForm} from '../BookEditor';
 import PropTypes from 'prop-types';
 import LinearProgress from '@material-ui/core/LinearProgress';
+import CircularProgress from '@material-ui/core/CircularProgress';
 import FormControl from '@material-ui/core/FormControl';
 import Input from '@material-ui/core/Input';
 import InputLabel from '@material-ui/core/InputLabel';
@@ -16,6 +17,7 @@ import SnackbarContent from '@material-ui/core/SnackbarContent';
 import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
 import InfoIcon from '@material-ui/icons/Info';
+import PhotoCameraIcon from '@material-ui/icons/PhotoCamera';
 import green from '@material-ui/core/colors/green';
 import red from '@material-ui/core/colors/red';
 import Dialog from '@material-ui/core/Dialog';
@@ -78,6 +80,7 @@ class HomePage extends Component {
     super(props);
     this.booksObj = {};
     this.selectedBooks = [];
+    this.largeScreen = (isWidthUp('md', this.props.width) ? true : false);
     this.state = {
       loading: true,
       books: [],
@@ -87,6 +90,7 @@ class HomePage extends Component {
       currentBook: {},
       showSuccess: false,
       showError: false,
+      addDlgOpen: false,
       scanning: false,
       isbn: ""
     };
@@ -98,7 +102,7 @@ class HomePage extends Component {
         name: "uid",
         options: { 
           filter: false,
-          customBodyRender: (uid) => <Button bookid={uid}>{uid}</Button>
+          customBodyRender: (uid) => <a href="javascript:void(0);" bookid={uid}>{uid}</a>
         }
       }, {
         name:"dateAdded",
@@ -142,6 +146,7 @@ class HomePage extends Component {
       }, {
         name: "detailsURL",
         options: {
+          filter: false,
           display: displayExtraColumns,
           customBodyRender: (url) => {
               if (url!==undefined && url!=="") { 
@@ -154,6 +159,7 @@ class HomePage extends Component {
       }, {
         name: "computedOrderField",
         options: {
+          filter: false,
           display: false,
           sortDirection: 'asc'
         }
@@ -181,6 +187,7 @@ class HomePage extends Component {
       fixedHeader: true,
       filterType: "multiselect",
       print: false,
+      responsive: "stacked",
       download: displayExtraOptions,
       filter: displayExtraOptions,
       customToolbarSelect: (selectedRows) => {
@@ -198,6 +205,12 @@ class HomePage extends Component {
     });
   }
 
+  setEditorRef(node) {
+    this.childNode = node;
+  }
+  callEditorUpdate(book) {
+    this.childNode.updatebook(this.state.currentBook);
+  }
   componentWillUnmount() {
     this.props.firebase.books().off();
   }
@@ -227,10 +240,16 @@ class HomePage extends Component {
   }
   stopScan = () => {
     this.setState({
+      addDlgOpen: false,
       scanning: false
     });
   }
-
+  addDlgOpen = () => {
+    this.setState({
+      addDlgOpen: true,
+      scanning: false
+    });
+  }
   loadBooks() {
     this.setState({ loading: true });
 
@@ -242,6 +261,14 @@ class HomePage extends Component {
           ...this.booksObject[key],
           uid: key
         }));
+        if (this.state.isbn) {
+          this.setState({
+            currentBook : {
+              ...this.booksObject[this.state.isbn],
+              uid: this.state.isbn
+              }
+          });
+        }
       }
       this.setState({
         books: booksList,
@@ -270,19 +297,27 @@ class HomePage extends Component {
   onDetected = event => {
     let code = event.codeResult.code;
     if (this.state.isbn !== code) {
-      this.setState( { isbn: code });
+      this.setState( {
+         isbn: code,
+         scanning: false
+      });
     }
   }
 
   onBookAdd = event => {
+    event.preventDefault();
     this.setState({
+      addDlgOpen: false,
       scanning: false
     });
     this.props.firebase.doAddBook(this.state.user,this.state.isbn)
     .then(() => {
       this.setState({ 
-        showSuccess: true,
-        drawerOpen: false
+        currentBook: {
+          ...this.booksObject[this.state.isbn],
+          uid: this.state.isbn
+        },
+        drawerOpen: true
        });
     })
     .catch(error => {
@@ -316,7 +351,7 @@ class HomePage extends Component {
     this.setState({ showSuccess: false });
   };
   render() {
-    const { loading, currentBook } = this.state; 
+    const { loading, currentBook, isbn } = this.state; 
     const { classes } = this.props;
 
     return (
@@ -335,16 +370,18 @@ class HomePage extends Component {
           open={this.state.drawerOpen}
           onClose={this.toggleDrawer}
           maxWidth="md"
+          fullScreen={!this.largeScreen}
           aria-labelledby="book-dialog-title"
         >
-          <DialogTitle id="book-dialog-title">{currentBook.title}</DialogTitle>
-           <BookEditorForm currentBook={currentBook} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
+          <DialogTitle id="book-dialog-title">{ currentBook.needLookup === 1 ? <CircularProgress/> : currentBook.title }</DialogTitle>
+           <BookEditorForm uid={currentBook.uid} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
         </Dialog>
 
         <Dialog
           open={this.state.drawerMultiOpen}
           onClose={this.toggleMultiDrawer}
           maxWidth="md"
+          fullScreen={!this.largeScreen}
          >
           <BookMultiEditorForm bookArray={this.selectedBooks} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleMultiDrawer}/>
         </Dialog>
@@ -383,30 +420,40 @@ class HomePage extends Component {
                 />
         </Snackbar>
 
-        <Fab color="primary" aria-label="Add" className={classes.fab} onClick={this.startScan}>
+        <Fab color="primary" aria-label="Add" className={classes.fab} onClick={this.addDlgOpen}>
           <AddIcon />
         </Fab>
 
         <Dialog
-          open={this.state.scanning}
+          open={this.state.addDlgOpen}
           onClose={this.stopScan}
-          aria-labelledby="scan-dialog-title"
           maxWidth="md"
+          fullScreen={!this.largeScreen}
         >
-          <DialogTitle id="scan-dialog-title">Scan a new book barcode</DialogTitle>
-          <DialogContent>
-            <Scanner onDetected={this.onDetected}/>
-            <FormControl margin="normal" fullWidth>
+          { this.state.scanning ? (
+            <DialogContent>
+              <Scanner fullWidth onDetected={this.onDetected}/>
+            </DialogContent>
+            ):(
+            <DialogContent>
+               <Button fullWidth onClick={this.startScan} color="primary">
+                  <PhotoCameraIcon/>
+                </Button>            
+                <form id="isbnForm" onSubmit={this.onBookAdd}>
+                <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="isbn">ISBN</InputLabel>
-                  <Input id="isbn" value={this.state.isbn} name="isbn" onChange={this.onISBNChange} autoFocus/>
-            </FormControl>
-          </DialogContent>
+                  <Input id="isbn" value={this.state.isbn} name="isbn" onChange={this.onISBNChange}/>
+                </FormControl>
+                </form>
+            </DialogContent>
+          )}
+
           <DialogActions>
-          <Button onClick={this.onBookAdd} color="primary">
-              Add
+            <Button type="submit" form="isbnForm" onClick={this.onBookAdd} color="secondary">
+                Add
             </Button>
-            <Button onClick={this.stopScan} color="secondary">
-              Close
+            <Button onClick={this.stopScan} color="primary">
+                Close
             </Button>
           </DialogActions>
         </Dialog>
