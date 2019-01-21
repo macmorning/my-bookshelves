@@ -12,15 +12,12 @@ import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
 import theme from '../../constants/theme';
 import * as ROUTES from '../../constants/routes';
 import { withAuthentication } from '../Session';
-// import CssBaseline from '@material-ui/core/CssBaseline';
-import 'typeface-roboto';
-
 
 
 const App = () => (
     <Router>
     <MuiThemeProvider theme={theme}>
-      <div>
+      <div id="top">
         <Navigation />
         <div style={{ display: "block", height:"63px"}}>&nbsp;</div>
         <Route exact path={ROUTES.HOME} component={HomePage} />

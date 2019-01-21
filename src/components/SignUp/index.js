@@ -16,9 +16,9 @@ import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 
 
-const SignUpPage = () => (
+const SignUpPage = (props) => (
   <div>
-    <SignUpForm />
+    <SignUpForm {...props}/>
   </div>
 );
 

@@ -113,12 +113,12 @@ class HomePage extends Component {
       }, {
         name: "series",
         options: { 
-          display: displayExtraColumns,
+          display: true,
         }
       }, {
         name: "volume",
         options: { 
-          display: displayExtraColumns,
+          display: true,
           filter: false,
         }
       }, {
@@ -150,7 +150,7 @@ class HomePage extends Component {
           display: displayExtraColumns,
           customBodyRender: (url) => {
               if (url!==undefined && url!=="") { 
-               return ( <a href={url} target="_new"><InfoIcon color="primary"/></a>); 
+               return ( <a href={url}  rel="noopener noreferrer" target="_blank"><InfoIcon color="primary"/></a>); 
               } else {
                 return ("");
               }
@@ -273,6 +273,14 @@ class HomePage extends Component {
       this.setState({
         books: booksList,
         loading: false,
+      }, () => {
+        let randCover = Math.floor(Math.random() * (this.state.books.length + 1));
+        if (this.largeScreen && this.state.books[randCover].imageURL) {
+            let rootDiv = document.getElementById("root");
+            rootDiv.style.backgroundImage = "url(" + this.state.books[randCover].imageURL + ")";
+            let topDiv = document.getElementById("top");
+            topDiv.style.opacity = 0.85;
+        }
       });
     });
   }
@@ -351,7 +359,7 @@ class HomePage extends Component {
     this.setState({ showSuccess: false });
   };
   render() {
-    const { loading, currentBook, isbn } = this.state; 
+    const { loading, currentBook } = this.state; 
     const { classes } = this.props;
 
     return (
@@ -376,7 +384,6 @@ class HomePage extends Component {
           <DialogTitle id="book-dialog-title">{ currentBook.needLookup === 1 ? <CircularProgress/> : currentBook.title }</DialogTitle>
            <BookEditorForm uid={currentBook.uid} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
         </Dialog>
-
         <Dialog
           open={this.state.drawerMultiOpen}
           onClose={this.toggleMultiDrawer}

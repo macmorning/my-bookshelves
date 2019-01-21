@@ -11,6 +11,9 @@ import Dialog from '@material-ui/core/Dialog';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogTitle from '@material-ui/core/DialogTitle';
+import InputAdornment from '@material-ui/core/InputAdornment';
+import IconButton from '@material-ui/core/IconButton';
+import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 
 const styles = theme => ({
   main: {
@@ -248,10 +251,36 @@ class BookEditorForm extends Component {
                   value={currentBook.publisher} onChange={this.onBookChange} />
                 <TextField id="imageURL"
                   label="image URL" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
-                  value={currentBook.imageURL} onChange={this.onBookChange} />
+                  value={currentBook.imageURL} onChange={this.onBookChange} 
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        { (currentBook.imageURL ? (
+                          <a href={currentBook.imageURL} rel="noopener noreferrer" target="_blank">
+                            <IconButton aria-label="Open image URL in a new tab">
+                              <OpenInNewIcon />
+                            </IconButton>
+                          </a>):(<span/>)) }
+                      </InputAdornment>
+                    )
+                  }}
+                  />
                 <TextField id="detailsURL"
                   label="Details URL" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
-                  value={currentBook.detailsURL} onChange={this.onBookChange} />
+                  value={currentBook.detailsURL} onChange={this.onBookChange}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        { (currentBook.detailsURL ? (
+                          <a href={currentBook.detailsURL}  rel="noopener noreferrer" target="_blank">
+                            <IconButton aria-label="Open details URL in a new tab">
+                              <OpenInNewIcon />
+                            </IconButton>
+                          </a>):(<span/>)) }
+                      </InputAdornment>
+                    )
+                  }}
+                   />
               </form>
             </Row>
             <Row>
