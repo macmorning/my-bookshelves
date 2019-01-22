@@ -20,6 +20,19 @@ function getTheme(theme) {
         disableRipple: true,
       },
     },
+    overrides: {
+      MUIDataTableHeadCell: {
+        root: {
+          paddingRight: "2px"
+        }
+      },
+      MUIDataTableBodyCell: {
+        cellStacked: {
+          paddingRight: "2px",
+          paddingLeft:"2px"
+        }
+      }
+    }
   });
 }
 

@@ -16,6 +16,7 @@ import Snackbar from '@material-ui/core/Snackbar';
 import SnackbarContent from '@material-ui/core/SnackbarContent';
 import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
+import EditIcon from '@material-ui/icons/Edit';
 import InfoIcon from '@material-ui/icons/Info';
 import PhotoCameraIcon from '@material-ui/icons/PhotoCamera';
 import green from '@material-ui/core/colors/green';
@@ -72,6 +73,12 @@ const styles = theme => ({
     bottom: theme.spacing.unit * 8,
     right: theme.spacing.unit * 2,
   },
+  fabModify: {
+    position: 'fixed',
+    bottom: theme.spacing.unit * 8,
+    right: theme.spacing.unit * 2,
+    zIndex: 200
+  }
 });
 
 
@@ -192,7 +199,9 @@ class HomePage extends Component {
       filter: displayExtraOptions,
       customToolbarSelect: (selectedRows) => {
           this.selectedBooks = selectedRows.data.map(rowMeta => this.state.books[rowMeta.dataIndex]);
-          return (<Button onClick={this.onModifySelected}>Modify</Button>);
+          return (<Fab color="primary" aria-label="Add" className={props.classes.fabModify} onClick={this.onModifySelected}>
+              <EditIcon />
+                </Fab>)
       }
     }
 

@@ -29,9 +29,3 @@ div#root {
 
 tr:nth-child(odd) {background: rgb(224, 224, 224)}
 tr:nth-child(even) {background: #FFF}
-/*
-@media (max-width: 959.95px) {
-  [class*="MUIDataTableBodyCell-cellStacked"] {
-    width: 85px !important;
-  }
-}*/
