@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
+import * as ROUTES from '../../constants/routes';
+import { withAuthentication } from '../Session';
 
 import Navigation from '../Navigation';
 import SignUpPage from '../SignUp';
@@ -10,16 +12,12 @@ import AccountPage from '../Account';
 // import AdminPage from '../Admin';
 import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
 import theme from '../../constants/theme';
-import * as ROUTES from '../../constants/routes';
-import { withAuthentication } from '../Session';
-
 
 const App = () => (
     <Router>
     <MuiThemeProvider theme={theme}>
       <div id="top">
         <Navigation />
-        <div style={{ display: "block", height:"63px"}}>&nbsp;</div>
         <Route exact path={ROUTES.HOME} component={HomePage} />
         <Route path={ROUTES.SIGN_UP} component={SignUpPage} />
         <Route path={ROUTES.SIGN_IN} component={SignInPage} />

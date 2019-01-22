@@ -12,7 +12,17 @@ import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import LibraryBooksIcon from '@material-ui/icons/LibraryBooks';
-
+import withWidth, { isWidthUp } from '@material-ui/core/withWidth';
+import Cover01 from '../../assets/01.png';
+import Cover02 from '../../assets/02.png';
+import Cover03 from '../../assets/03.png';
+import Cover04 from '../../assets/04.png';
+import Cover05 from '../../assets/05.png';
+import Cover06 from '../../assets/06.png';
+import Cover07 from '../../assets/07.png';
+import Cover08 from '../../assets/08.png';
+import Cover09 from '../../assets/09.png';
+import Cover10 from '../../assets/10.png';
 
 const styles = theme => ({
   root: {
@@ -26,7 +36,30 @@ const styles = theme => ({
   },
 });
 
+
 function Navigation(props) {
+
+  let largeScreen = (isWidthUp('md', props.width) ? true : false);
+  if (largeScreen) {
+        let randCover = Math.floor(Math.random() * 10);
+        let coversArray = [
+          "url(" + Cover01 + ")",
+          "url(" + Cover02 + ")",
+          "url(" + Cover03 + ")",
+          "url(" + Cover04 + ")",
+          "url(" + Cover05 + ")",
+          "url(" + Cover06 + ")",
+          "url(" + Cover07 + ")",
+          "url(" + Cover08 + ")",
+          "url(" + Cover09 + ")",
+          "url(" + Cover10 + ")",
+        ]
+        let rootDiv = document.getElementById("root");
+        rootDiv.style.backgroundImage = coversArray[randCover];
+        let topDiv = document.getElementById("top");
+        topDiv.style.opacity = 0.75;
+  }
+
   return (
   <AuthUserContext.Consumer>
     {authUser =>
@@ -42,8 +75,8 @@ class NavigationAuth extends React.Component {
     const { classes } = this.props;
     return (
       <div className={classes.root}>
-        <AppBar>
-          <Toolbar>
+        <AppBar position="static">
+          <Toolbar variant="dense">
             <Typography variant="h6" color="inherit">
               BD Tek
             </Typography>
@@ -67,8 +100,8 @@ function NavigationNonAuth(props) {
   const { classes } = props;
   return (
     <div className={classes.root}>
-      <AppBar position="fixed">
-        <Toolbar>
+      <AppBar position="static">
+        <Toolbar variant="dense">
             <Typography variant="h6" color="inherit" className={classes.grow}>
               BD Tek
             </Typography>
@@ -84,4 +117,4 @@ function NavigationNonAuth(props) {
 Navigation.propTypes = {
   classes: PropTypes.object.isRequired,
 };
-export default withStyles(styles)(Navigation);
+export default withWidth()(withStyles(styles)(Navigation));

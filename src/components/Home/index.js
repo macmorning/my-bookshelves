@@ -273,14 +273,6 @@ class HomePage extends Component {
       this.setState({
         books: booksList,
         loading: false,
-      }, () => {
-        let randCover = Math.floor(Math.random() * (this.state.books.length + 1));
-        if (this.largeScreen && this.state.books[randCover].imageURL) {
-            let rootDiv = document.getElementById("root");
-            rootDiv.style.backgroundImage = "url(" + this.state.books[randCover].imageURL + ")";
-            let topDiv = document.getElementById("top");
-            topDiv.style.opacity = 0.85;
-        }
       });
     });
   }

@@ -5,6 +5,7 @@ import { withAuthorization } from '../Session';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { compose } from 'recompose';
 import Paper from '@material-ui/core/Paper';
+import Typography from '@material-ui/core/Typography';
 
 import PasswordChangeForm from '../PasswordChange';
 import EmailChangeForm from '../EmailChange';
@@ -15,6 +16,7 @@ import Snackbar from '@material-ui/core/Snackbar';
 import SnackbarContent from '@material-ui/core/SnackbarContent';
 import green from '@material-ui/core/colors/green';
 import red from '@material-ui/core/colors/red';
+import { Divider } from '@material-ui/core';
 
 
 const styles = theme => ({
@@ -35,11 +37,14 @@ const styles = theme => ({
     },
   },
   paper: {
-    marginTop: theme.spacing.unit * 8,
+    marginTop: theme.spacing.unit * 4,
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
-    padding: `${theme.spacing.unit}px ${theme.spacing.unit}px ${theme.spacing.unit}px`,
+    alignItems: 'left',
+    padding: `${theme.spacing.unit*3}px ${theme.spacing.unit*3}px ${theme.spacing.unit*3}px`,
+  },
+  divider: {
+    margin: `${theme.spacing.unit*2}px 0 ${theme.spacing.unit*2}px 0`,
   }
 });
 
@@ -69,15 +74,43 @@ class AccountPageBase extends Component {
       {authUser => (
         <main className={classes.main}>
         <Paper className={classes.paper}>
+          <Typography variant="h5" component="h3">
+            Signing out
+          </Typography>
+          <Typography component="p">
+            Use this button to signout. You will be redirected to the signin page.
+          </Typography>
+          <Divider className={classes.divider}/>
           <SignOutButton /><br/>
         </Paper>
         <Paper className={classes.paper}>
-          <PasswordChangeForm onSuccess={this.onSuccess} onError={this.onError}/>
+            <Typography variant="h5" component="h3">
+                Changing your password
+            </Typography>
+            <Typography component="p">
+                You can only change your password if you are using an email and password to signin.
+            </Typography>
+            <Divider className={classes.divider}/>
+            <PasswordChangeForm onSuccess={this.onSuccess} onError={this.onError}/>
           </Paper>
         <Paper className={classes.paper}>
+          <Typography variant="h5" component="h3">
+              Changing your email address
+          </Typography>
+          <Typography component="p">
+              Change the email address you registered with. Your library will not be affected.
+          </Typography>
+          <Divider className={classes.divider}/>
           <EmailChangeForm user={authUser} onSuccess={this.onSuccess} onError={this.onError}/>
         </Paper>
         <Paper className={classes.paper}>
+          <Typography variant="h5" component="h3">
+                Changing your display name
+          </Typography>
+          <Typography component="p">
+                Change the name that is displayed to other users.
+          </Typography>
+          <Divider className={classes.divider}/>
           <InformationsChangeForm onSuccess={this.onSuccess} onError={this.onError}/>
         </Paper>
           <Snackbar
