@@ -3,18 +3,23 @@ import Switch from '@material-ui/core/Switch';
 import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 
-const INITIAL_STATE = {
-  displayBackground: false
-};
+const PREFS = [
+  { name: "displayBackground", default: true},
+];
 
 class PreferencesForm extends Component {
   constructor(props) {
     super(props);
-    this.state = { ...INITIAL_STATE };
+    let INITIAL_STATE = {};
+    PREFS.forEach(function(item) {
+      INITIAL_STATE[item.name] = (localStorage.getItem(item.name) !== null ? (localStorage.getItem(item.name)==="true") : item.default);
+    });
+    this.state = { ...INITIAL_STATE};
   }
 
   onChange = name => event => {
     this.setState({ [name]: event.target.checked });
+    localStorage.setItem(name, event.target.checked);
   };
 
   render() {
@@ -27,7 +32,6 @@ class PreferencesForm extends Component {
                 name="displayBackground"
                 checked={this.state.displayBackground}
                 onChange={this.onChange("displayBackground")}
-                value={true}
               />
           }
           label="Display background image on desktop"

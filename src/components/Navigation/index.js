@@ -39,9 +39,11 @@ const styles = theme => ({
 
 function Navigation(props) {
 
+  let displayBackground = (localStorage.getItem("displayBackground") !== null ? (localStorage.getItem("displayBackground")==="true") : true);
   let largeScreen = (isWidthUp('md', props.width) ? true : false);
-  if (largeScreen) {
-        let randCover = Math.floor(Math.random() * 10);
+  let rootDiv = document.getElementById("root");
+  let topDiv = document.getElementById("top");
+  if (largeScreen && displayBackground) {
         let coversArray = [
           "url(" + Cover01 + ")",
           "url(" + Cover02 + ")",
@@ -54,10 +56,12 @@ function Navigation(props) {
           "url(" + Cover09 + ")",
           "url(" + Cover10 + ")",
         ]
-        let rootDiv = document.getElementById("root");
+        let randCover = Math.floor(Math.random() * coversArray.length);
         rootDiv.style.backgroundImage = coversArray[randCover];
-        let topDiv = document.getElementById("top");
         topDiv.style.opacity = 0.75;
+  } else {
+    rootDiv.style.backgroundImage = "";
+    topDiv.style.opacity = 1;
   }
 
   return (

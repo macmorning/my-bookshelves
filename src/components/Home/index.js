@@ -109,12 +109,11 @@ class HomePage extends Component {
         name: "uid",
         options: { 
           filter: false,
-          customBodyRender: (uid) => <a href="javascript:void(0);" bookid={uid}>{uid}</a>
+          customBodyRender: (uid) => <Button bookid={uid}>{uid}</Button>
         }
       }, {
-        name:"dateAdded",
-        options: {
-          display: displayExtraColumns,
+        name: "title",
+        options: { 
           filter: false,
         }
       }, {
@@ -129,12 +128,6 @@ class HomePage extends Component {
           filter: false,
         }
       }, {
-        name: "title",
-        options: { 
-          filter: false,
-        }
-      }, 
-      {
         name: "author",
         options: { 
           display: displayExtraColumns 
@@ -149,6 +142,12 @@ class HomePage extends Component {
         name: "publisher",
         options: {
           display: displayExtraColumns,
+        }
+      }, {
+        name:"dateAdded",
+        options: {
+          display: false,
+          filter: false,
         }
       }, {
         name: "detailsURL",
@@ -183,6 +182,7 @@ class HomePage extends Component {
           });
         } 
       },
+      onRowClick: (rowData, rowMeta) => { console.log(rowMeta.dataIndex);},
       textLabels: {
         body: {
           noMatch: "No book found!",
@@ -199,9 +199,9 @@ class HomePage extends Component {
       filter: displayExtraOptions,
       customToolbarSelect: (selectedRows) => {
           this.selectedBooks = selectedRows.data.map(rowMeta => this.state.books[rowMeta.dataIndex]);
-          return (<Fab color="primary" aria-label="Add" className={props.classes.fabModify} onClick={this.onModifySelected}>
+          return (<div><Fab color="secondary" aria-label="Modify" className={props.classes.fabModify} onClick={this.onModifySelected}>
               <EditIcon />
-                </Fab>)
+                </Fab></div>)
       }
     }
 
