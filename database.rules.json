@@ -3,9 +3,10 @@
       ".read": "auth !== null",
       "bd": {
         "$usernode": {
+          ".read": true,
           ".write": "auth != null && auth.uid == $usernode",
           ".indexOn": "computedOrderField"
-        },
+        }
       },
       "users": {
         "$usernode": {

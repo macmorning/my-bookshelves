@@ -91,6 +91,7 @@ class HomePage extends Component {
     this.state = {
       loading: true,
       books: [],
+      series: [],
       user: "",
       drawerOpen: false,
       drawerMultiOpen: false,
@@ -182,7 +183,9 @@ class HomePage extends Component {
           });
         } 
       },
-      onRowClick: (rowData, rowMeta) => { console.log(rowMeta.dataIndex);},
+      onRowClick: (rowData, rowMeta) => { 
+        // console.log(rowMeta.dataIndex);
+      },
       textLabels: {
         body: {
           noMatch: "No book found!",
@@ -265,11 +268,14 @@ class HomePage extends Component {
     this.props.firebase.books(this.state.user).orderByChild("computedOrderField").on('value', snapshot => {
       this.booksObject = snapshot.val();
       let booksList = [];
+      let series = [];
       if(this.booksObject) {
         booksList = Object.keys(this.booksObject).map(key => ({
           ...this.booksObject[key],
           uid: key
         }));
+        series = [...new Set(booksList.map(book => book.series))];
+        series = series.filter(el => el);
         if (this.state.isbn) {
           this.setState({
             currentBook : {
@@ -281,6 +287,7 @@ class HomePage extends Component {
       }
       this.setState({
         books: booksList,
+        series: series,
         loading: false,
       });
     });
@@ -383,7 +390,7 @@ class HomePage extends Component {
           aria-labelledby="book-dialog-title"
         >
           <DialogTitle id="book-dialog-title">{ currentBook.needLookup === 1 ? <CircularProgress/> : currentBook.title }</DialogTitle>
-           <BookEditorForm uid={currentBook.uid} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
+           <BookEditorForm uid={currentBook.uid}  seriesArray={this.state.series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
         </Dialog>
         <Dialog
           open={this.state.drawerMultiOpen}
@@ -391,7 +398,7 @@ class HomePage extends Component {
           maxWidth="md"
           fullScreen={!this.largeScreen}
          >
-          <BookMultiEditorForm bookArray={this.selectedBooks} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleMultiDrawer}/>
+          <BookMultiEditorForm booksArray={this.selectedBooks} seriesArray={this.state.series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleMultiDrawer}/>
         </Dialog>
         <Snackbar
           anchorOrigin={{

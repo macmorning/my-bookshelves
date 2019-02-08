@@ -14,9 +14,11 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import IconButton from '@material-ui/core/IconButton';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
+import Autosuggest from 'react-autosuggest'; // https://github.com/moroshko/react-autosuggest
 
 const styles = theme => ({
   main: {
+    minWidth: '400px',
     margin: theme.spacing.unit * 2,
   },
   form: {
@@ -29,17 +31,56 @@ const styles = theme => ({
   }
 });
 
+function escapeRegexCharacters(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function getSuggestions(items, value) {
+  const escapedValue = escapeRegexCharacters(value.trim());
+  
+  if (escapedValue === '') {
+    return [];
+  }
+
+  const regex = new RegExp('^' + escapedValue, 'i');
+  return items.filter(item => regex.test(item));
+}
+
+function getSuggestionValue(suggestion) {
+  return suggestion;
+}
+
+function renderSeriesSuggestion(suggestion) {
+  return (
+    <span name="series">{suggestion}</span>
+  );
+}
+
+class InputComponent extends React.Component {
+  render() {
+    return (<TextField
+    fullWidth 
+    margin="normal" 
+    variant="outlined" 
+    InputLabelProps={{ shrink: true,}}
+    {...this.props.inputProps} />);
+  }
+}
+
+const renderInputComponent = inputProps => {
+  return <InputComponent inputProps={inputProps} />;
+};
 
 class BookMultiEditorFormBase extends Component {
   constructor(props) {
     super(props);
-    this.bookArray = props.bookArray;
     this.state = {
       currentValues: {
         author: "",
         series: "",
-        publisher: ""
-      }
+        publisher: "",
+      },
+      suggestedSeries: []
     };
     this.onFormSubmit = this.onFormSubmit.bind(this);
     let auth = this.props.firebase.auth;
@@ -51,10 +92,21 @@ class BookMultiEditorFormBase extends Component {
       }
     });
   }
+  onSuggestionsFetchRequested = ({ value }) => {
+    this.setState({
+      suggestedSeries: getSuggestions(this.props.seriesArray, value)
+    });
+  };
+
+  onSuggestionsClearRequested = () => {
+    this.setState({
+      suggestedSeries: []
+    });
+  };
 
   onFormSubmit(event) {
     event.preventDefault();
-    this.bookArray.forEach((book) => {
+    this.props.booksArray.forEach((book) => {
       book = { ...book,
         author: this.state.currentValues.author || book.author,
         series: this.state.currentValues.series || book.series,
@@ -67,9 +119,9 @@ class BookMultiEditorFormBase extends Component {
       });
     });
   }
-  onValueChange = event => {
-    let targetName = event.target.id;
-    let targetValue = event.target.value;
+  onValueChange = (event, { newValue, method }) => {
+    let targetName = (event.target.id !== "" ? event.target.id : event.target.getAttribute("name"));
+    let targetValue = (event.target.id !== "" ? event.target.value : newValue);
     // Make a copy of the object stored in state before replacing it
     this.setState(prevState => ({
       currentValues: {
@@ -78,18 +130,33 @@ class BookMultiEditorFormBase extends Component {
       }
     }));
   };
+
   render() {
       const { classes } = this.props;
-      const { currentValues } = this.state;
+      const { currentValues, suggestedSeries } = this.state;
+      const seriesInputProps = {
+        onChange: this.onValueChange,
+        value: currentValues.series,
+        id: "series",
+        label: "Series"
+      };
       return (
         <main className={classes.main}>
+        <Column flexGrow={1}>
+          <Row horizontal='start' vertical='start'>
           <form className={classes.form} onSubmit={this.onFormSubmit}>
-                <TextField id="author"
-                  label="Author" placeholder="" value={currentValues.author} onChange={this.onValueChange} fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}/>
-                <TextField id="series"
-                  label="Series" placeholder="" value={currentValues.series} onChange={this.onValueChange} fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}/>
+                <Autosuggest 
+                    suggestions={suggestedSeries}
+                    onSuggestionsFetchRequested={this.onSuggestionsFetchRequested}
+                    onSuggestionsClearRequested={this.onSuggestionsClearRequested}
+                    getSuggestionValue={getSuggestionValue}
+                    renderSuggestion={renderSeriesSuggestion}
+                    renderInputComponent={renderInputComponent}
+                    inputProps={seriesInputProps} />
                 <TextField id="publisher"
                   label="Publisher" placeholder="" value={currentValues.publisher} onChange={this.onValueChange} fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}/>
+                <TextField id="author"
+                  label="Author" placeholder="" value={currentValues.author} onChange={this.onValueChange} fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}/>
                <DialogActions>
                   <Button type="submit" color="primary">
                       Save
@@ -99,6 +166,8 @@ class BookMultiEditorFormBase extends Component {
                   </Button>
                 </DialogActions>
           </form>
+          </Row>
+          </Column>
       </main>
       );
   }
@@ -115,7 +184,8 @@ BookMultiEditorForm.propTypes = {
   onSaveSuccess: PropTypes.func.isRequired,
   onSaveError: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
-  bookArray: PropTypes.array.isRequired
+  booksArray: PropTypes.array.isRequired,
+  seriesArray: PropTypes.array.isRequired
 };
 
 export {BookMultiEditorForm};
@@ -127,7 +197,8 @@ class BookEditorForm extends Component {
     super(props);
     this.state = { 
       currentBook: {},
-      confirm: false
+      confirm: false,
+      suggestedSeries: []
     };
     this.onBookSubmit = this.onBookSubmit.bind(this);
     let auth = this.props.firebase.auth;
@@ -179,9 +250,9 @@ class BookEditorForm extends Component {
     });
   }
 
-  onBookChange = event => {
-    let targetName = event.target.id;
-    let targetValue = event.target.value;
+  onBookChange = (event, { newValue, method }) => {
+    let targetName = (event.target.id !== "" ? event.target.id : event.target.getAttribute("name"));
+    let targetValue = (event.target.id !== "" ? event.target.value : newValue);
     // Make a copy of the object stored in state before replacing it
     this.setState(prevState => ({
       currentBook: {
@@ -189,14 +260,46 @@ class BookEditorForm extends Component {
           [targetName]: targetValue
       }
     }));
+  }
+
+  onSuggestionsFetchRequested = ({ value }) => {
+    console.log("** onSuggestionsFetchRequested");
+    this.setState({
+      suggestedSeries: getSuggestions(this.props.seriesArray, value)
+    });
   };
+
+  onSuggestionsClearRequested = () => {
+    console.log("** onSuggestionsClearRequested");
+    this.setState({
+      suggestedSeries: []
+    });
+  };
+
   render() {
     const { classes } = this.props;
-    const { currentBook } = this.state;
+    const { currentBook, suggestedSeries } = this.state;
+    const seriesInputProps = {
+      onChange: this.onBookChange,
+      value: currentBook.series,
+      id: "series",
+      label: "Series"
+    };
     let cover = "";
     if (currentBook.imageURL) {
         cover = <img  src={currentBook.imageURL} className={classes.cover} alt=""/>;
     } 
+    /*
+                   <Autosuggest 
+                    suggestions={suggestedSeries}
+                    onSuggestionsFetchRequested={this.onSuggestionsFetchRequested}
+                    onSuggestionsClearRequested={this.onSuggestionsClearRequested}
+                    getSuggestionValue={getSuggestionValue}
+                    renderSuggestion={renderSeriesSuggestion}
+                    renderInputComponent={renderInputComponent}
+                    inputProps={seriesInputProps} />
+
+    */
     return (
       <main className={classes.main}>
       <Dialog
@@ -207,7 +310,7 @@ class BookEditorForm extends Component {
         aria-labelledby="confirm-book-remove-dialog-title"
         aria-describedby="confirm-book-remove-dialog-description"
       >
-        <DialogTitle id="confirm-book-remove-dialog-title">{this.state.currentBook.title ? currentBook.title : "Untitled book"}</DialogTitle>
+        <DialogTitle id="confirm-book-remove-dialog-title">{currentBook.title ? currentBook.title : "Untitled book"}</DialogTitle>
         <DialogContentText style={{ margin: '10px' }} id="confirm-book-remove-dialog-description">
             Are you sure you want to remove this book from your shelves?
         </DialogContentText>
@@ -240,7 +343,7 @@ class BookEditorForm extends Component {
                 <TextField id="series"
                   label="Series" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
                   value={currentBook.series} onChange={this.onBookChange} />
-                <TextField id="volume"
+                 <TextField id="volume"
                   label="Volume" type="number" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}
                   value={currentBook.volume} onChange={this.onBookChange} />
                 <TextField id="published"
@@ -310,7 +413,8 @@ BookEditorForm.propTypes = {
   onSaveSuccess: PropTypes.func.isRequired,
   onSaveError: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
-  uid: PropTypes.string.isRequired
+  uid: PropTypes.string.isRequired,
+  seriesArray: PropTypes.array.isRequired
 };
 
 export default (withStyles(styles)(withFirebase(BookEditorForm)));
