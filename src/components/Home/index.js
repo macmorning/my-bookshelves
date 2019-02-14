@@ -95,7 +95,7 @@ class HomePage extends Component {
       user: "",
       drawerOpen: false,
       drawerMultiOpen: false,
-      currentBook: {},
+      currentBook: { uid: "" },
       showSuccess: false,
       showError: false,
       addDlgOpen: false,
@@ -177,6 +177,7 @@ class HomePage extends Component {
       onCellClick: (obj) => { if(obj.props && obj.props.bookid) { this.setState({ 
             currentBook: {
               ...this.booksObject[obj.props.bookid],
+              series: this.booksObject[obj.props.bookid]["series"] || "",
               uid: obj.props.bookid
             },
             drawerOpen: true
@@ -276,6 +277,7 @@ class HomePage extends Component {
         }));
         series = [...new Set(booksList.map(book => book.series))];
         series = series.filter(el => el);
+        series.sort();
         if (this.state.isbn) {
           this.setState({
             currentBook : {
@@ -287,8 +289,8 @@ class HomePage extends Component {
       }
       this.setState({
         books: booksList,
-        series: series,
         loading: false,
+        series: series
       });
     });
   }
@@ -367,9 +369,8 @@ class HomePage extends Component {
     this.setState({ showSuccess: false });
   };
   render() {
-    const { loading, currentBook } = this.state; 
+    const { loading, currentBook, series } = this.state; 
     const { classes } = this.props;
-
     return (
       <div>
 
@@ -390,7 +391,7 @@ class HomePage extends Component {
           aria-labelledby="book-dialog-title"
         >
           <DialogTitle id="book-dialog-title">{ currentBook.needLookup === 1 ? <CircularProgress/> : currentBook.title }</DialogTitle>
-           <BookEditorForm uid={currentBook.uid}  seriesArray={this.state.series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
+           <BookEditorForm currentBook={currentBook}  seriesArray={series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
         </Dialog>
         <Dialog
           open={this.state.drawerMultiOpen}
@@ -398,7 +399,7 @@ class HomePage extends Component {
           maxWidth="md"
           fullScreen={!this.largeScreen}
          >
-          <BookMultiEditorForm booksArray={this.selectedBooks} seriesArray={this.state.series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleMultiDrawer}/>
+          <BookMultiEditorForm booksArray={this.selectedBooks} seriesArray={series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleMultiDrawer}/>
         </Dialog>
         <Snackbar
           anchorOrigin={{
