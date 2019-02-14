@@ -50,9 +50,9 @@ function getSuggestionValue(suggestion) {
   return suggestion;
 }
 
-function renderSeriesSuggestion(suggestion) {
+function renderSuggestion(suggestion) {
   return (
-    <span name="series">{suggestion}</span>
+    <span>{suggestion}</span>
   );
 }
 
@@ -65,13 +65,26 @@ class AutosuggestSeries extends React.Component {
       onSuggestionsFetchRequested={this.props.onSuggestionsFetchRequested}
       onSuggestionsClearRequested={this.props.onSuggestionsClearRequested}
       getSuggestionValue={getSuggestionValue}
-      renderSuggestion={renderSeriesSuggestion}
+      renderSuggestion={renderSuggestion}
       renderInputComponent={renderInputComponent}
       inputProps={this.props.inputProps} />
     );
   }
 }
-
+class AutosuggestPublishers extends React.Component {
+  render() {
+    return (
+      <Autosuggest 
+      suggestions={this.props.suggestions}
+      onSuggestionsFetchRequested={this.props.onSuggestionsFetchRequested}
+      onSuggestionsClearRequested={this.props.onSuggestionsClearRequested}
+      getSuggestionValue={getSuggestionValue}
+      renderSuggestion={renderSuggestion}
+      renderInputComponent={renderInputComponent}
+      inputProps={this.props.inputProps} />
+    );
+  }
+}
 class InputComponent extends React.Component {
   render() {
     return (<TextField
@@ -96,7 +109,8 @@ class BookMultiEditorFormBase extends Component {
         series: "",
         publisher: "",
       },
-      suggestedSeries: []
+      suggestedSeries: [],
+      suggestedPublishers: []
     };
     this.onFormSubmit = this.onFormSubmit.bind(this);
     let auth = this.props.firebase.auth;
@@ -108,18 +122,28 @@ class BookMultiEditorFormBase extends Component {
       }
     });
   }
-  onSuggestionsFetchRequested = ({ value }) => {
+  onSeriesSuggestionsFetchRequested = ({ value }) => {
     this.setState({
       suggestedSeries: getSuggestions(this.props.seriesArray, value)
     });
   };
 
-  onSuggestionsClearRequested = () => {
+  onPublishersSuggestionsFetchRequested = ({ value }) => {
+    this.setState({
+      suggestedPublishers: getSuggestions(this.props.publishersArray, value)
+    });
+  };
+
+  onSeriesSuggestionsClearRequested = () => {
     this.setState({
       suggestedSeries: []
     });
   };
-
+  onPublishersClearRequested = () => {
+    this.setState({
+      suggestedPublishers: []
+    });
+  };
   onFormSubmit(event) {
     event.preventDefault();
     this.props.booksArray.forEach((book) => {
@@ -135,27 +159,59 @@ class BookMultiEditorFormBase extends Component {
       });
     });
   }
-  onValueChange = (event, { newValue, method }) => {
-    let targetName = (event.target.id !== "" ? event.target.id : event.target.getAttribute("name"));
-    let targetValue = (event.target.id !== "" ? event.target.value : newValue);
+
+  onBookSeriesSelect = (event, {newValue, method}) => {
     // Make a copy of the object stored in state before replacing it
     this.setState(prevState => ({
       currentValues: {
-          ...prevState.currentValues,
-          [targetName]: targetValue
+          ...prevState.currentBook,
+          series: newValue
       }
     }));
-  };
+  }
+  onBookPublisherSelect = (event, {newValue, method}) => {
+    // Make a copy of the object stored in state before replacing it
+    this.setState(prevState => ({
+      currentValues: {
+          ...prevState.currentBook,
+          publisher: newValue
+      }
+    }));
+  }
+  onValueChange = (event) => {
+    let targetName = event.target.id;
+    let targetValue = event.target.value;
+    // Make a copy of the object stored in state before replacing it
+    this.setState(prevState => ({
+      currentValues: {
+        ...prevState.currentValues,
+        [targetName]: targetValue
+    }
+    }));
+  }
 
   render() {
       const { classes } = this.props;
-      const { currentValues, suggestedSeries } = this.state;
+      const { currentValues, suggestedSeries, suggestedPublishers } = this.state;
       const seriesInputProps = {
-        onChange: this.onValueChange,
+        onChange: this.onBookSeriesSelect,
         value: currentValues.series,
         id: "series",
         label: "Series"
       };
+      const publishersInputProps = {
+        onChange: this.onBookPublisherSelect,
+        value: currentValues.publisher,
+        id: "publisher",
+        label: "Publisher"
+      };
+      /*
+                      <AutosuggestPublishers 
+                    suggestions={suggestedPublishers}
+                    onSuggestionsFetchRequested={this.onPublishersSuggestionsFetchRequested}
+                    onSuggestionsClearRequested={this.onPublishersSuggestionsClearRequested}
+                    inputProps={publishersInputProps} />
+      */
       return (
         <main className={classes.main}>
         <Column flexGrow={1}>
@@ -163,14 +219,14 @@ class BookMultiEditorFormBase extends Component {
           <form className={classes.form} onSubmit={this.onFormSubmit}>
                 <AutosuggestSeries 
                     suggestions={suggestedSeries}
-                    onSuggestionsFetchRequested={this.onSuggestionsFetchRequested}
-                    onSuggestionsClearRequested={this.onSuggestionsClearRequested}
+                    onSuggestionsFetchRequested={this.onSeriesSuggestionsFetchRequested}
+                    onSuggestionsClearRequested={this.onSeriesSuggestionsClearRequested}
                     inputProps={seriesInputProps} />
-                <TextField id="publisher"
-                  label="Publisher" placeholder="" value={currentValues.publisher} onChange={this.onValueChange} fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}/>
                 <TextField id="author"
                   label="Author" placeholder="" value={currentValues.author} onChange={this.onValueChange} fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}/>
-               <DialogActions>
+                 <TextField id="publisher"
+                  label="Publisher" placeholder="" value={currentValues.publisher} onChange={this.onValueChange} fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}/>
+                <DialogActions>
                   <Button type="submit" color="primary">
                       Save
                   </Button>
@@ -196,7 +252,8 @@ BookMultiEditorForm.propTypes = {
   onSaveError: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
   booksArray: PropTypes.array.isRequired,
-  seriesArray: PropTypes.array.isRequired
+  seriesArray: PropTypes.array.isRequired,
+  publishersArray: PropTypes.array.isRequired
 };
 
 export {BookMultiEditorForm};
@@ -218,19 +275,22 @@ class BookEditorFormBase extends Component {
         this.setState({ user: user.uid });
         this.props.firebase.book(this.state.user,this.props.currentBook.uid).on('value', (snapshot) => {
           let book = snapshot.val();
-          this.setState(prevState => ({
-            currentBook: {
-                ...book,
-                series: this.props.currentBook.series || "",
-                uid: this.props.currentBook.uid
-            }
-          }));
+          if (book) {
+            this.setState(prevState => ({
+              currentBook: {
+                  ...book,
+                  series: (book.series ? book.series : ""),
+                  uid: this.props.currentBook.uid
+              }
+            }));
+          }
         });
       } else {
         // No user is signed in.
       }
     });    
  }
+
   onBookSubmit(event) {
     event.preventDefault();
     this.props.firebase.doUpdateBook(this.state.user,this.state.currentBook.uid,this.state.currentBook).then(() => {
@@ -283,13 +343,13 @@ class BookEditorFormBase extends Component {
     }));
   }
 
-  onSuggestionsFetchRequested = ({ value }) => {
+  onSeriesSuggestionsFetchRequested = ({ value }) => {
     this.setState({
       suggestedSeries: getSuggestions(this.props.seriesArray, value)
     });
   };
 
-  onSuggestionsClearRequested = () => {
+  onSeriesSuggestionsClearRequested = () => {
     this.setState({
       suggestedSeries: []
     });
@@ -350,8 +410,8 @@ class BookEditorFormBase extends Component {
                   value={currentBook.author} onChange={this.onBookChange} />
                 <AutosuggestSeries 
                     suggestions={suggestedSeries}
-                    onSuggestionsFetchRequested={this.onSuggestionsFetchRequested}
-                    onSuggestionsClearRequested={this.onSuggestionsClearRequested}
+                    onSuggestionsFetchRequested={this.onSeriesSuggestionsFetchRequested}
+                    onSuggestionsClearRequested={this.onSeriesSuggestionsClearRequested}
                     inputProps={seriesInputProps} />
                 <TextField id="volume"
                   label="Volume" type="number" placeholder="" fullWidth margin="normal" variant="outlined" InputLabelProps={{ shrink: true,}}

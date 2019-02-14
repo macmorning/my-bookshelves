@@ -56,7 +56,7 @@ class Firebase {
     books = uid => this.db.ref(`bd/${uid}`).limitToFirst(this.maxBooks);
     book = (uid, bookid) => this.db.ref(`bd/${uid}/${bookid}`);
     doUpdateBook = (uid, bookid, book) => (book.computedOrderField = (book.series ? book.series + (book.volume ? "_" + book.volume.padStart(4, '0') : "") : "") + "_" + book.title) && (this.db.ref(`bd/${uid}/${bookid}`).update(book));
-    doAddBook = (uid, bookid) => (this.db.ref(`bd/${uid}/${bookid}`).set({ needLookup: 1, dateAdded: this.currDateFormatted}));
+    doAddBook = (uid, bookid) => (this.db.ref(`bd/${uid}/${bookid}`).set({ author:"", uid:bookid, detailsURL:"", imageURL:"", edition:"", title:"", volume: "", series: "", publisher: "", needLookup: 1, dateAdded: this.currDateFormatted}));
     doRemoveBook = (uid, bookid) => (this.db.ref(`bd/${uid}/${bookid}`).remove());
 }
 

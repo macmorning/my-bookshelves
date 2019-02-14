@@ -87,11 +87,13 @@ class HomePage extends Component {
     super(props);
     this.booksObj = {};
     this.selectedBooks = [];
+    this.booksData = [];
     this.largeScreen = (isWidthUp('md', this.props.width) ? true : false);
     this.state = {
       loading: true,
       books: [],
       series: [],
+      publishers: [],
       user: "",
       drawerOpen: false,
       drawerMultiOpen: false,
@@ -202,7 +204,7 @@ class HomePage extends Component {
       download: displayExtraOptions,
       filter: displayExtraOptions,
       customToolbarSelect: (selectedRows) => {
-          this.selectedBooks = selectedRows.data.map(rowMeta => this.state.books[rowMeta.dataIndex]);
+          this.selectedBooks = selectedRows.data.map(rowMeta => this.booksObject[this.booksData[rowMeta.dataIndex][0]]);
           return (<div><Fab color="secondary" aria-label="Modify" className={props.classes.fabModify} onClick={this.onModifySelected}>
               <EditIcon />
                 </Fab></div>)
@@ -218,12 +220,6 @@ class HomePage extends Component {
     });
   }
 
-  setEditorRef(node) {
-    this.childNode = node;
-  }
-  callEditorUpdate(book) {
-    this.childNode.updatebook(this.state.currentBook);
-  }
   componentWillUnmount() {
     this.props.firebase.books().off();
   }
@@ -263,53 +259,114 @@ class HomePage extends Component {
       scanning: false
     });
   }
-  loadBooks() {
-    this.setState({ loading: true });
 
-    this.props.firebase.books(this.state.user).orderByChild("computedOrderField").on('value', snapshot => {
-      this.booksObject = snapshot.val();
-      let booksList = [];
-      let series = [];
-      if(this.booksObject) {
-        booksList = Object.keys(this.booksObject).map(key => ({
-          ...this.booksObject[key],
-          uid: key
-        }));
-        series = [...new Set(booksList.map(book => book.series))];
-        series = series.filter(el => el);
-        series.sort();
-        if (this.state.isbn) {
-          this.setState({
-            currentBook : {
-              ...this.booksObject[this.state.isbn],
-              uid: this.state.isbn
-              }
-          });
-        }
-      }
-      this.setState({
-        books: booksList,
-        loading: false,
-        series: series
+
+  rebuildBooksDataFromObject = () => {
+    this.booksData = [];
+    Object.keys(this.booksObject).forEach((key) => {
+      let line = [];
+      this.table_columns.forEach((attribute) => {
+          if (typeof attribute === 'object') {
+            line.push(this.booksObject[key][attribute.name] !== undefined ? this.booksObject[key][attribute.name] : "");
+          } else {
+            line.push(this.booksObject[key][attribute] !== undefined ? this.booksObject[key][attribute] : "");
+          }
       });
+      line[0] = key; // in case uid is not saved in object
+      this.booksData.push(line);
     });
   }
 
-  getBooksData() {
-    const booksData = [];
-    let table_columns = this.table_columns;
-    this.state.books.forEach(function(book) {
-      let line = [];
-      table_columns.forEach(function(attribute) {
-          if (typeof attribute === 'object') {
-            line.push(book[attribute.name] !== undefined ? book[attribute.name] : "");
-          } else {
-            line.push(book[attribute] !== undefined ? book[attribute] : "");
-          }
+  addBookDataFromObject = (id, book) => {
+    let line = [];
+    this.table_columns.forEach((attribute) => {
+      if (typeof attribute === 'object') {
+        line.push(book[attribute.name] !== undefined ? book[attribute.name] : "");
+      } else {
+        line.push(book[attribute] !== undefined ? book[attribute] : "");
+      }
+    });
+    line[0] = id;
+    this.booksData.push(line);
+  }
+
+  deleteBookDataFromObject = (id) => {
+    this.booksData = this.booksData.filter((value) => {
+      return value[0] !== id;
+    });
+  }
+
+  rebuildBookDataFromObject = (id, book) => {
+    let dataIndex = this.booksData.findIndex(x => x[0] === id);
+    let line = [];
+    this.table_columns.forEach((attribute) => {
+      if (typeof attribute === 'object') {
+        line.push(book[attribute.name] !== undefined ? book[attribute.name] : "");
+      } else {
+        line.push(book[attribute] !== undefined ? book[attribute] : "");
+      }
+    });
+    line[0] = id;
+    this.booksData[dataIndex] = line;
+  }
+
+  loadBooks() {
+    this.setState({ loading: true });
+
+    this.props.firebase.books(this.state.user).on("child_added", (snapshot) => {
+      if(this.state.loading) return;
+      var newBook = snapshot.val();
+      this.booksObject[snapshot.key] = newBook;
+      this.addBookDataFromObject(snapshot.key, newBook);
+      if (this.state.isbn) {
+        this.setState({
+          currentBook : {
+            ...this.booksObject[this.state.isbn],
+            uid: this.state.isbn
+            }
+        });
+      }
+    });
+
+    this.props.firebase.books(this.state.user).on("child_changed", (snapshot) => {
+      var changedBook = snapshot.val();
+      this.booksObject[snapshot.key] = changedBook;
+      this.rebuildBookDataFromObject(snapshot.key, changedBook);
+      if (this.state.isbn) {
+        this.setState({
+          currentBook : {
+            ...this.booksObject[this.state.isbn],
+            uid: this.state.isbn
+            }
+        });
+      }
+    });  
+
+    this.props.firebase.books(this.state.user).on("child_removed", (snapshot) => {
+      delete this.booksObject[snapshot.key];
+      this.deleteBookDataFromObject(snapshot.key);
+    });  
+
+    this.props.firebase.books(this.state.user).orderByChild("computedOrderField").once('value').then((snapshot) => {
+      this.booksObject = snapshot.val();
+      let series = [];
+      let publishers = [];
+      if(this.booksObject) {
+        series = [...new Set(Object.keys(this.booksObject).map(key => this.booksObject[key].series))];
+        series = series.filter(el => el);
+        series.sort();
+        publishers = [...new Set(Object.keys(this.booksObject).map(key => this.booksObject[key].publisher))];
+        publishers = publishers.filter(el => el);
+        publishers.sort();
+        this.rebuildBooksDataFromObject();
+      }
+      this.setState({
+        loading: false,
+        series: series,
+        publishers: publishers
       });
-      booksData.push(line);
-    })
-    return booksData;
+    });
+
   }
 
   onDetected = event => {
@@ -361,6 +418,10 @@ class HomePage extends Component {
       error: error
      });
   }
+  getBooksData = () => {
+    // clone the array so that datatable is refreshed
+    return this.booksData.slice(0);
+  }
 
   onSnackClose = (event, reason) => {
     if (reason === 'clickaway') {
@@ -369,14 +430,14 @@ class HomePage extends Component {
     this.setState({ showSuccess: false });
   };
   render() {
-    const { loading, currentBook, series } = this.state; 
+    const { loading, currentBook, series, publishers } = this.state; 
     const { classes } = this.props;
     return (
       <div>
 
           { !loading ? (
                 <MUIDataTable
-                  data={ this.getBooksData() }
+                  data={this.getBooksData()}
                   columns={this.table_columns}
                   options={this.table_options}
                 />
@@ -391,7 +452,7 @@ class HomePage extends Component {
           aria-labelledby="book-dialog-title"
         >
           <DialogTitle id="book-dialog-title">{ currentBook.needLookup === 1 ? <CircularProgress/> : currentBook.title }</DialogTitle>
-           <BookEditorForm currentBook={currentBook}  seriesArray={series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
+           <BookEditorForm currentBook={currentBook} publishersArray={publishers} seriesArray={series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
         </Dialog>
         <Dialog
           open={this.state.drawerMultiOpen}
@@ -399,7 +460,7 @@ class HomePage extends Component {
           maxWidth="md"
           fullScreen={!this.largeScreen}
          >
-          <BookMultiEditorForm booksArray={this.selectedBooks} seriesArray={series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleMultiDrawer}/>
+          <BookMultiEditorForm booksArray={this.selectedBooks} publishersArray={publishers} seriesArray={series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleMultiDrawer}/>
         </Dialog>
         <Snackbar
           anchorOrigin={{
