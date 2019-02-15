@@ -91,7 +91,6 @@ class HomePage extends Component {
     this.largeScreen = (isWidthUp('md', this.props.width) ? true : false);
     this.state = {
       loading: true,
-      books: [],
       series: [],
       publishers: [],
       user: "",
@@ -264,6 +263,10 @@ class HomePage extends Component {
   rebuildBooksDataFromObject = () => {
     this.booksData = [];
     Object.keys(this.booksObject).forEach((key) => {
+      // rattrage de données au cas où le livre aurait été créé sans l'attribut uid
+      if (this.booksObject[key]["uid"] === undefined) {
+        this.booksObject[key]["uid"] = key;
+      }
       let line = [];
       this.table_columns.forEach((attribute) => {
           if (typeof attribute === 'object') {
