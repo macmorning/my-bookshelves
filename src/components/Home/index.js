@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import qs from 'query-string';
 import { withAuthorization } from '../Session';
 import { withFirebase } from '../Firebase';
 import { withStyles } from '@material-ui/core/styles';
@@ -88,6 +89,7 @@ class HomePage extends Component {
     this.booksObj = {};
     this.selectedBooks = [];
     this.booksData = [];
+    this.params = qs.parse(this.props.location.search);
     this.largeScreen = (isWidthUp('md', this.props.width) ? true : false);
     this.state = {
       loading: true,
@@ -213,7 +215,30 @@ class HomePage extends Component {
     let auth = this.props.firebase.auth;
     auth.onAuthStateChanged((user) => {
       if (user) {
-        this.setState({ user: user.uid });
+        let userId = user.uid;
+        if (this.params.user) {
+          userId = this.params.user;
+        }
+        this.props.firebase.user(userId).once("value", function(snapshot){
+            let userInfo = snapshot.val();
+            document.dispatchEvent(new CustomEvent("userAuth", {
+              detail: {
+                authUser: {
+                  uid: user.uid,
+                  displayName: user.displayName
+                },
+                user: {
+                  uid: userId,
+                  displayName: userInfo.displayName
+                }
+              }
+            }));
+        });
+        this.setState({ 
+          user: userId,
+          authUser: user.uid
+        });
+
         this.loadBooks();
       }
     });
@@ -416,9 +441,10 @@ class HomePage extends Component {
     });
   }
   onSaveError = (error) => {
+    console.log(error);
     this.setState({ 
       showError: true,
-      error: error
+      error: error.error.message
      });
   }
   getBooksData = () => {
@@ -430,7 +456,10 @@ class HomePage extends Component {
     if (reason === 'clickaway') {
       return;
     }
-    this.setState({ showSuccess: false });
+    this.setState({ 
+      showSuccess: false,
+      showError: false 
+    });
   };
   render() {
     const { loading, currentBook, series, publishers } = this.state; 
@@ -455,7 +484,7 @@ class HomePage extends Component {
           aria-labelledby="book-dialog-title"
         >
           <DialogTitle id="book-dialog-title">{ currentBook.needLookup === 1 ? <CircularProgress/> : currentBook.title }</DialogTitle>
-           <BookEditorForm currentBook={currentBook} publishersArray={publishers} seriesArray={series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
+           <BookEditorForm user={this.state.user} currentBook={currentBook} publishersArray={publishers} seriesArray={series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleDrawer}/>
         </Dialog>
         <Dialog
           open={this.state.drawerMultiOpen}
@@ -463,7 +492,7 @@ class HomePage extends Component {
           maxWidth="md"
           fullScreen={!this.largeScreen}
          >
-          <BookMultiEditorForm booksArray={this.selectedBooks} publishersArray={publishers} seriesArray={series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleMultiDrawer}/>
+          <BookMultiEditorForm user={this.state.user} booksArray={this.selectedBooks} publishersArray={publishers} seriesArray={series} onSaveSuccess={this.onSaveSuccess} onSaveError={this.onSaveError} onClose={this.toggleMultiDrawer}/>
         </Dialog>
         <Snackbar
           anchorOrigin={{
@@ -499,10 +528,12 @@ class HomePage extends Component {
                 style = {{ backgroundColor: red[600] }}
                 />
         </Snackbar>
-
+        
+        { this.state.user === this.state.authUser ? (
         <Fab color="primary" aria-label="Add" className={classes.fab} onClick={this.addDlgOpen}>
           <AddIcon />
-        </Fab>
+        </Fab>):( <span/>)
+        }
 
         <Dialog
           open={this.state.addDlgOpen}

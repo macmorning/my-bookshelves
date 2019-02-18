@@ -1,13 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-
+import qs from 'query-string';
 import * as ROUTES from '../../constants/routes';
 import { AuthUserContext } from '../Session';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
-import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
 import SearchIcon from '@material-ui/icons/Search';
@@ -39,7 +38,7 @@ const styles = theme => ({
 
 
 function Navigation(props) {
-
+  let params = qs.parse(window.location.search);
   let displayBackground = (localStorage.getItem("displayBackground") !== null ? (localStorage.getItem("displayBackground")==="true") : true);
   let largeScreen = (isWidthUp('md', props.width) ? true : false);
   let rootDiv = document.getElementById("root");
@@ -68,22 +67,44 @@ function Navigation(props) {
   return (
   <AuthUserContext.Consumer>
     {authUser =>
-      authUser ? <NavigationAuth {...props} /> : <NavigationNonAuth {...props}/>
+      authUser ? <NavigationAuth {...props} authUser={authUser.uid} user={params.user}/> : <NavigationNonAuth {...props}/>
     }
   </AuthUserContext.Consumer>
   );
 }
 
 class NavigationAuth extends React.Component {
-
+  constructor(props) {
+    super(props);
+    this.users = {
+      user: {
+        displayName : ""
+      },
+      authUser: {
+        displayName : ""
+      }
+    };
+    this.state = {
+      userName: ""
+    }
+  }
+  updateUsers = (userInfo) => {
+    this.users = userInfo;
+    this.setState({
+      userName : (this.users.user.uid !== this.users.authUser.uid ? "(" + this.users.user.displayName + ")" : "")
+    });
+  }
   render() {
+    document.addEventListener("userAuth", (e) => { 
+      this.updateUsers(e.detail);
+    });
     const { classes } = this.props;
     return (
       <div className={classes.root}>
         <AppBar position="static">
           <Toolbar variant="dense">
-            <Typography variant="h6" color="inherit">
-              BD Tek
+            <Typography id="title" variant="h6" color="inherit">
+              BD Tek {this.state.userName}
             </Typography>
             
             <div className={classes.grow} />

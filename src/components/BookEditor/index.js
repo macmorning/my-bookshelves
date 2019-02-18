@@ -116,8 +116,8 @@ class BookMultiEditorFormBase extends Component {
     let auth = this.props.firebase.auth;
     auth.onAuthStateChanged((user) => {
       if (user) {
-        this.setState({ user: user.uid });
-      } else {
+        this.setState({ user: this.props.user ? this.props.user : user.uid });
+     } else {
         // No user is signed in.
       }
     });
@@ -272,7 +272,7 @@ class BookEditorFormBase extends Component {
     let auth = this.props.firebase.auth;
     auth.onAuthStateChanged((user) => {
       if (user) {
-        this.setState({ user: user.uid });
+        this.setState({ user: this.props.user ? this.props.user : user.uid });
         this.props.firebase.book(this.state.user,this.props.currentBook.uid).on('value', (snapshot) => {
           let book = snapshot.val();
           if (book) {
