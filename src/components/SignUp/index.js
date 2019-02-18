@@ -70,9 +70,10 @@ class SignUpFormBase extends Component {
     this.props.firebase
       .doCreateUserWithEmailAndPassword(email, passwordOne)
       .then(authUser => {
-        authUser.user.updateProfile({
+        /*authUser.user.updateProfile({
             displayName: username
-          })
+          })*/
+        this.props.firebase.doUpdateInformations(username)
           .then(() => {
             this.setState({ ...INITIAL_STATE });
             this.props.history.push(ROUTES.HOME);

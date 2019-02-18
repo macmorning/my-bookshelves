@@ -1,6 +1,9 @@
 const functions = require('firebase-functions'),
       parseString = require('xml2js').parseString,
+      admin = require('firebase-admin'),
       rp =require('request-promise');
+
+admin.initializeApp();
 
 const lookupConfig = {
   // set using firebase functions:config:set libthing.key=...
@@ -47,3 +50,14 @@ exports.fetchBookInformations = functions.database.ref('/bd/{user}/{ref}/needLoo
     });
 });
 
+exports.createUserNode = functions.auth.user().onCreate((userRecord) => {
+    console.info(userRecord);
+    return admin.database().ref(`/users/${userRecord.uid}`).set({
+        email: userRecord.email
+    });
+});
+
+exports.deleteUserNode = functions.auth.user().onDelete((userRecord) => {
+    console.info(userRecord);
+    return admin.database().ref(`/users/${userRecord.uid}`).remove();
+});

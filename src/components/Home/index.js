@@ -522,7 +522,7 @@ class HomePage extends Component {
                 <form id="isbnForm" onSubmit={this.onBookAdd}>
                 <FormControl margin="normal" fullWidth>
                   <InputLabel htmlFor="isbn">ISBN</InputLabel>
-                  <Input id="isbn" value={this.state.isbn} name="isbn" onChange={this.onISBNChange}/>
+                  <Input id="isbn" value={this.state.isbn} name="isbn" onChange={this.onISBNChange} autocomplete="off"/>
                 </FormControl>
                 </form>
             </DialogContent>

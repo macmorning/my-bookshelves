@@ -10,6 +10,7 @@ import Toolbar from '@material-ui/core/Toolbar';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
+import SearchIcon from '@material-ui/icons/Search';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import LibraryBooksIcon from '@material-ui/icons/LibraryBooks';
 import withWidth, { isWidthUp } from '@material-ui/core/withWidth';
@@ -93,6 +94,9 @@ class NavigationAuth extends React.Component {
             <IconButton color="inherit" component={Link} key="Account" to={ROUTES.ACCOUNT}>
               <AccountBoxIcon/>
             </IconButton>
+            <IconButton color="inherit" component={Link} key="Search content" to={ROUTES.SEARCH}>
+              <SearchIcon/>
+            </IconButton>
           </Toolbar>
         </AppBar>
       </div>
@@ -109,9 +113,13 @@ function NavigationNonAuth(props) {
             <Typography variant="h6" color="inherit" className={classes.grow}>
               BD Tek
             </Typography>
-            <Button variant="contained" href={ROUTES.SIGN_IN} color="primary">
-              Sign In
-            </Button>
+            <IconButton color="inherit" component={Link} key="Sign In" to={ROUTES.SIGN_IN}>
+              <AccountBoxIcon/>
+            </IconButton>
+            <IconButton color="inherit" component={Link} key="Search content" to={ROUTES.SEARCH}>
+              <SearchIcon/>
+            </IconButton>
+
         </Toolbar>
       </AppBar>
     </div>
