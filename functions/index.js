@@ -1,16 +1,24 @@
 const functions = require('firebase-functions'),
-      parseString = require('xml2js').parseString,
-      admin = require('firebase-admin'),
-      rp =require('request-promise');
-
+       admin = require('firebase-admin'),
+      rp =require('request-promise'),
+      htmlparser = require("htmlparser2"),
+      select = require('soupselect').select;
+// parseString = require('xml2js').parseString,
+     
 admin.initializeApp();
 
 const lookupConfig = {
   // set using firebase functions:config:set libthing.key=...
   libthing_api_key: functions.config().libthing.key || false,
-  libthing_baseurl: "https://www.librarything.com/services/rest/1.1/?method=librarything.ck.getwork&isbn=@@isbn@@&apikey=@@apikey@@"
+  libthing_baseurl: "https://www.librarything.com/services/rest/1.1/?method=librarything.ck.getwork&isbn=@@isbn@@&apikey=@@apikey@@",
+  leslibraires_baseurl: "https://www.leslibraires.fr/recherche/?q=@@isbn@@"
 };
-
+const fieldNames = {
+    "Collection": "series",
+    "EAN13": "uid",
+    "Éditeur": "publisher",
+    "Date de publication": "published"
+}
 exports.fetchBookInformations = functions.database.ref('/bd/{user}/{ref}/needLookup').onWrite((snapshot, context) => { 
     // Grab the current value of what was written to the Realtime Database.
     let isbn = context.params.ref;
@@ -18,10 +26,73 @@ exports.fetchBookInformations = functions.database.ref('/bd/{user}/{ref}/needLoo
         return null;
     }
     console.info("lookup for > " + isbn);
-    let url = lookupConfig.libthing_baseurl.replace("@@apikey@@",lookupConfig.libthing_api_key).replace("@@isbn@@",isbn);
+    //let url = lookupConfig.libthing_baseurl.replace("@@apikey@@",lookupConfig.libthing_api_key).replace("@@isbn@@",isbn);
+    let url = lookupConfig.leslibraires_baseurl.replace("@@isbn@@",isbn);
 
-    return rp({ url: url }).then(function(resp) {
-            parseString(resp, function(err, result){
+    return rp({ url: url, followRedirect: true, simple: false }).then(function(resp) {
+        let informations = {};
+        let handler = new htmlparser.DomHandler((error, dom) => {
+            if (error)
+                console.error(error);
+            else {
+                let sel = select(dom, '.dl-horizontal dt');
+                sel.forEach((elem) => {
+                        if (elem.children === undefined || elem.next === undefined || elem.next.children === undefined) return;
+                        let currentFieldName = elem.children[0].data;
+                        if (fieldNames[currentFieldName]) {
+                            if(elem.next.children[0].data) {
+                                // text is set directly
+                                informations[fieldNames[currentFieldName]] = elem.next.children[0].data;
+                            } else {
+                                // probably an anchor tag
+                                informations[fieldNames[currentFieldName]] = elem.next.children[0].children[0].data;
+                            }
+                            if (currentFieldName === "Collection" && elem.next.children[1] !== undefined) {
+                                const regex = /(\d{1,2})/gm;
+                                let m = regex.exec(elem.next.children[1].data);
+                                informations["volume"] = m[0];
+                            }
+                        }
+                });
+                sel = select(dom,".main-infos h1 span");
+                if(sel[0].data) {
+                    informations["title"] = sel[0].data;
+                } else {
+                    informations["title"] = sel[0].children[0].data;                        
+                }
+                sel = select(dom,".main-infos h2");
+                if(sel[0].data) {
+                    informations["author"] = sel[0].data;
+                } else {
+                    informations["author"] = sel[0].children[0].data;                        
+                }
+            }
+        });
+        let parser = new htmlparser.Parser(handler);
+        parser.parseComplete(resp);
+        if(informations !== {} ) {
+            console.info(informations);
+            var dataRef = snapshot.after.ref.parent;
+            return dataRef.update({
+                title: (informations.title !== undefined ? informations.title : "untitled?"),
+                author: (informations.author !== undefined ? informations.author : ""),
+                imageURL: (informations.imageURL !== undefined ? informations.imageURL : ""),
+                detailsURL: (informations.detailsURL !== undefined ? informations.detailsURL : ""),
+                published: (informations.published !== undefined ? informations.published : ""),
+                publisher: (informations.publisher !== undefined ? informations.publisher : ""),
+                series: (informations.series !== undefined ? informations.series : ""),
+                volume: (informations.volume !== undefined ? informations.volume : ""),
+                needLookup: 0
+            });
+        } else {
+            console.info("lookup err > not found!");
+            return dataRef.update({
+                title: "not found!",
+                needLookup: 0
+            });
+        }
+
+            /*parseString(resp, function(err, result){
                 if (err) { 
                     console.error(new Error("parseString error > " + err));
                 }
@@ -44,7 +115,7 @@ exports.fetchBookInformations = functions.database.ref('/bd/{user}/{ref}/needLoo
                         needLookup: 0
                     });
                 }
-            });
+            });*/
     }).catch(function(error) {
         console.error(new Error("request err > " + error.message));
     });
