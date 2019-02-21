@@ -15,10 +15,28 @@ const lookupConfig = {
 };
 const fieldNames = {
     "Collection": "series",
+    "Séries" : "series",
     "EAN13": "uid",
     "Éditeur": "publisher",
     "Date de publication": "published"
 }
+const getText = (node) => {
+    if(node.type === "text") {
+        return node.data;
+    }
+    if (node.children.length > 0) {
+        let text = "";
+        node.children.forEach((item) => {
+            if (item.type === "text") {
+                text += item.data;
+            } else if (item.type === "tag" && item.name === "a") {
+                text += item.children[0].data;
+            }
+        });
+        return text;
+    }
+}
+
 exports.fetchBookInformations = functions.database.ref('/bd/{user}/{ref}/needLookup').onWrite((snapshot, context) => { 
     // Grab the current value of what was written to the Realtime Database.
     let isbn = context.params.ref;
@@ -40,31 +58,38 @@ exports.fetchBookInformations = functions.database.ref('/bd/{user}/{ref}/needLoo
                         if (elem.children === undefined || elem.next === undefined || elem.next.children === undefined) return;
                         let currentFieldName = elem.children[0].data;
                         if (fieldNames[currentFieldName]) {
-                            if(elem.next.children[0].data) {
-                                // text is set directly
-                                informations[fieldNames[currentFieldName]] = elem.next.children[0].data;
-                            } else {
-                                // probably an anchor tag
-                                informations[fieldNames[currentFieldName]] = elem.next.children[0].children[0].data;
+                            let text = false;
+                            try {
+                                text = getText(elem.next);
+                            } catch (e) {
+                                text = false;
                             }
-                            if (currentFieldName === "Collection" && elem.next.children[1] !== undefined) {
-                                const regex = /(\d{1,2})/gm;
+                            // cas particulier de "Collection" ou "Série" qui inclut le numéro du volume entre parenthèses
+                            if (text && (currentFieldName === "Collection" || currentFieldName === "Séries") && elem.next.children[1] !== undefined) {
+                                const regex = /(\d{1,4})/gm;
                                 let m = regex.exec(elem.next.children[1].data);
-                                informations["volume"] = m[0];
+                                informations["volume"] = parseInt(m[0]);
+                                text = text.replace(/\n.*/gm,"");
+                            }
+                            if (text) {
+                                informations[fieldNames[currentFieldName]] = text;
                             }
                         }
                 });
                 sel = select(dom,".main-infos h1 span");
-                if(sel[0].data) {
-                    informations["title"] = sel[0].data;
-                } else {
-                    informations["title"] = sel[0].children[0].data;                        
-                }
+                if(sel[0] !== undefined) {
+                    informations["title"] = getText(sel[0]);
+                } 
+
                 sel = select(dom,".main-infos h2");
-                if(sel[0].data) {
-                    informations["author"] = sel[0].data;
-                } else {
-                    informations["author"] = sel[0].children[0].data;                        
+                if(sel[0] !== undefined) {
+                    informations["author"] = getText(sel[0]);
+                } 
+
+                informations["detailsURL"] = url;
+                sel = select(dom,"div.image a div img");
+                if(sel[0] !== undefined && sel[0].attribs !== undefined && sel[0].attribs["src"]) {
+                    informations["imageURL"] = sel[0].attribs["src"];
                 }
             }
         });
